@@ -133,9 +133,6 @@ cadence/plans/2025-12-01_计划文档_版本发布_v2.0.0发布计划.md
 - [ ] 版本号正确（首次为 v1.0）
 - [ ] 文档存放在 `cadence/` 对应子目录
 - [ ] **Plan 文档**：确认存储在 `cadence/plans/` 目录
-- [ ] **README 文档路径**：
-  - [ ] 项目介绍类 → 根目录 `README.md` 或 `readmes/`
-  - [ ] 开发相关类 → `cadence/readmes/`
 
 ### 路径映射（跨平台）
 
