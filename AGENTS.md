@@ -52,3 +52,17 @@
 - 开始任务前，应先读取 `CLAUDE.md`，并按需查看 `.claude/rules/` 与 `cadence/project-rules/` 中的相关规则文件。
 - 执行 issue 时，应先读取 issue 与相关上下文，再修改文件。
 - 完成任务后，必须汇报测试或验证结果。
+
+
+## Codex project rules
+
+- 只实现当前 issue
+- 不扩 scope
+- 先读 issue、OpenSpec task、plan section
+- 完成后必须输出：
+  - 修改摘要
+  - 关键文件
+  - 测试命令
+  - 测试结果
+  - 剩余风险
+- 如收到 review 的 blocking 问题，只修 blocking

@@ -52,6 +52,14 @@
 - **格式化命令**：待确认
 - **覆盖率阈值**：80%
 
+## Claude project rules
+
+- 先读 issue、OpenSpec、plan，再行动
+- Planner 不写业务代码
+- Reviewer 不直接修代码
+- Tester 只做验证与风险判断
+- 输出要包含：结论、风险、下一步建议
+
 ## 项目信息
 # currentDate
 Today's date is 2026/04/14。
