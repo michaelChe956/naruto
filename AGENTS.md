@@ -40,6 +40,9 @@
 ### 8. Playwright CLI 使用规则
 - **浏览器自动化工具规范** → 详见 `.claude/rules/playwright.md`
 
+### 9. 代码阅读规则
+- **结构化优先，使用 `ast-grep outline` 避免盲读** → 详见 `.claude/rules/code-reading.md`
+
 ## 与 CLAUDE.md 的关系
 
 - 用户在当前任务中的明确指令优先级最高。
