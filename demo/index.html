@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>formatCompactDuration 演示</title>
+  <style>
+    :root {
+      --text: #1f2328;
+      --muted: #59636e;
+      --border: #d1d9e0;
+      --bg: #f6f8fa;
+      --valid: #1a7f37;
+      --invalid: #cf222e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.5;
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+    h1 { font-size: 28px; margin: 0 0 8px; }
+    .desc { color: var(--muted); margin: 0 0 24px; }
+    section {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    label { display: block; font-weight: 600; margin-bottom: 8px; }
+    input {
+      width: 100%;
+      font-size: 18px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    input:focus { outline: 2px solid #0969da; outline-offset: 1px; }
+    #result {
+      margin-top: 12px;
+      min-height: 28px;
+      font-size: 22px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    #result[data-state="valid"] { color: var(--valid); }
+    #result[data-state="invalid"] { color: var(--invalid); }
+    #result[data-state="empty"] { color: var(--muted); }
+    h2 { font-size: 18px; margin: 0 0 12px; }
+    #examples { list-style: none; margin: 0; padding: 0; }
+    #examples li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      background: var(--bg);
+      font-variant-numeric: tabular-nums;
+    }
+    #examples li[data-passed="true"] { border-left: 4px solid var(--valid); }
+    #examples li[data-passed="false"] { border-left: 4px solid var(--invalid); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>formatCompactDuration 演示</h1>
+    <p class="desc">将非负整数秒数格式化为紧凑时长字符串：小于 1 小时输出 MM:SS，否则输出 HH:MM:SS。</p>
+
+    <section>
+      <label for="seconds-input">秒数</label>
+      <input id="seconds-input" type="text" inputmode="numeric" autocomplete="off" placeholder="输入非负整数秒数，例如 3661" />
+      <div id="result" data-state="empty" aria-live="polite"></div>
+    </section>
+
+    <section>
+      <h2>验收示例</h2>
+      <ul id="examples"></ul>
+    </section>
+  </main>
+  <script type="module" src="./demo.js"></script>
+</body>
+</html>
