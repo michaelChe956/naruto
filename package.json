@@ -1,0 +1,20 @@
+{
+  "name": "naruto",
+  "version": "1.0.0",
+  "description": "naruto h5 game",
+  "homepage": "https://github.com/michaelChe956/naruto#readme",
+  "bugs": {
+    "url": "https://github.com/michaelChe956/naruto/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/michaelChe956/naruto.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
