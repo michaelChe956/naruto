@@ -6,3 +6,6 @@
 .claude/settings.json
 .playwright/
 .playwright-cli/
+
+# CodeGraph 本地索引
+.codegraph/

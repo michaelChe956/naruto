@@ -65,26 +65,35 @@
 }
 ```
 
-### Serena MCP
+### CodeGraph MCP
 
-**用途**：语义代码理解和项目内存
+**用途**：基于项目代码图进行大范围代码检索、架构理解、调用链分析和影响面分析。
 
 **触发场景**：
-- 符号操作：重命名、提取、移动函数/类
-- 项目级代码导航和探索
-- 多语言项目
-- 会话生命周期管理（`/cad-load`、`/cad-save`）
-- 大型代码库分析（>50 文件）
+- 需要理解某个功能跨文件如何工作
+- 需要分析调用链、依赖关系或影响面
+- 需要进行大范围代码检索
+- 需要回答“某功能从入口到落点如何流转”
 
-**常用命令**：
-- `mcp__serena__activate_project` - 激活项目
-- `mcp__serena__list_memories` - 列出记忆
-- `mcp__serena__find_symbol` - 查找符号
-- `mcp__serena__get_symbols_overview` - 获取符号概览
+**使用规则**：
+1. 项目必须先执行 `codegraph init`，存在 `.codegraph/` 后 CodeGraph MCP 才提供工具。
+2. 大范围检索优先使用 CodeGraph。
+3. 精确结构阅读优先使用 `ast-grep outline`。
+4. `ast-grep outline` 与 CodeGraph 结果冲突时，以 `ast-grep outline` 为准。
 
-**重要规则**：
-- 禁止分析 `.git/` 目录
-- 使用 Git 命令获取版本信息
+**手动服务命令**：
+```bash
+codegraph serve --mcp
+```
+
+**典型工作流**：
+```
+# 大范围理解功能流向
+> 使用 CodeGraph 分析登录流程从入口到服务层的调用链
+
+# 影响面分析
+> 使用 CodeGraph 分析修改 UserService 会影响哪些模块
+```
 
 ### 智普视觉理解 MCP（可选）
 
@@ -115,7 +124,7 @@
 
 **使用规则**：
 1. 图片建议放到本地目录，通过对话指定图片名称或路径来调用
-2. 直接在客户端粘贴图片无法调用此 MCP（Claude Code 除外）
+2. 直接在客户端粘贴图片无法调用此 MCP（Claude Code 除外；pi 经 pi-mcp-adapter 调用时同样需通过本地路径指定图片）
 3. 需要安装最新版本（>= 0.1.2）
 
 **典型工作流**：
@@ -151,7 +160,6 @@
 **使用规则**：
 1. 基于 HTTP 协议的远程服务，无需本地安装运行时
 2. 搜索结果包含标题、URL、摘要等结构化信息
-3. **优先级规则**：当需要进行网络搜索时，**优先使用 MiniMax Token Plan MCP**。只有在 MiniMax 不可用时，才回退到模型自带的 WebSearch 工具或其他联网搜索功能（如智普联网搜索 MCP）
 
 **典型工作流**：
 ```
@@ -262,8 +270,7 @@
 
 **使用规则**：
 1. 基于 uvx 运行的本地 MCP 服务
-2. 验证配置：进入 Claude Code 后输入 `/mcp`，能看到 `web_search` 和 `understand_image` 说明配置成功
-3. **优先级规则**：当需要进行网络搜索时，**优先使用 MiniMax Token Plan MCP**。只有在 MiniMax 不可用时，才回退到模型自带的 WebSearch 工具或其他联网搜索功能（如智普联网搜索 MCP）
+2. 验证配置：在 Claude Code 或 pi 中输入 `/mcp`（pi 的 `/mcp` 由 pi-mcp-adapter 提供），能看到 `web_search` 和 `understand_image` 说明配置成功
 
 **典型工作流**：
 ```
@@ -277,7 +284,7 @@
 ### 智普/MiniMax API Key 安全提醒
 
 > **安全警告**
-> 1. 请自行前往对应平台获取 API Key，不要将真实密钥告诉 Claude Code
+> 1. 请自行前往对应平台获取 API Key，不要将真实密钥告诉 AI 客户端（Claude Code、Codex、pi 等）
 > 2. 配置文件中使用占位符，用户需自行替换为真实密钥
 > 3. `.mcp.json` 已在 `.gitignore` 中排除，不会提交到版本控制
 >
