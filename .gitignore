@@ -6,3 +6,9 @@
 .claude/settings.json
 .playwright/
 .playwright-cli/
+
+# CodeGraph 本地索引
+.codegraph/
+
+# MCP 可用性缓存
+cadence/cache/mcp-availability/

@@ -65,28 +65,54 @@
 }
 ```
 
-### Serena MCP
+### CodeGraph MCP
 
-**用途**：语义代码理解和项目内存
+**用途**：基于项目代码图进行大范围代码检索、架构理解、调用链分析和影响面分析。
 
 **触发场景**：
-- 符号操作：重命名、提取、移动函数/类
-- 项目级代码导航和探索
-- 多语言项目
-- 会话生命周期管理（`/cad-load`、`/cad-save`）
-- 大型代码库分析（>50 文件）
+- 需要理解某个功能跨文件如何工作
+- 需要分析调用链、依赖关系或影响面
+- 需要进行大范围代码检索
+- 需要回答“某功能从入口到落点如何流转”
 
-**常用命令**：
-- `mcp__serena__activate_project` - 激活项目
-- `mcp__serena__list_memories` - 列出记忆
-- `mcp__serena__find_symbol` - 查找符号
-- `mcp__serena__get_symbols_overview` - 获取符号概览
+**使用规则**：
+1. CodeGraph 仅适用于 Coding 项目：仅当最终 `project_type=coding`，或用户明确启用 `--enable-codegraph` 时，才允许在项目根目录执行 `codegraph init`（存在 `.codegraph/` 后 CodeGraph MCP 才提供工具）。`project_type=non-coding` 默认跳过安装、初始化与配置，且该开关不改变项目类型与规则模板选择。
+2. Coding 项目在 CodeGraph 已启用且可用时，大范围检索优先使用 CodeGraph。
+3. 精确结构阅读优先使用 `ast-grep outline`。
+4. `ast-grep outline` 与 CodeGraph 结果冲突时，以 `ast-grep outline` 为准。
 
-**重要规则**：
-- 禁止分析 `.git/` 目录
-- 使用 Git 命令获取版本信息
+**手动服务命令**：
+```bash
+codegraph serve --mcp
+```
+
+**典型工作流**：
+```
+# 大范围理解功能流向
+> 使用 CodeGraph 分析登录流程从入口到服务层的调用链
+
+# 影响面分析
+> 使用 CodeGraph 分析修改 UserService 会影响哪些模块
+```
+
+### 图片识别路由与 MCP 可用性状态
+
+**模型能力判定**：图片任务必须将当前模型能力划分为 `multimodal`、`text-only` 或 `unknown`。判断只依据当前客户端是否实际将目标图片暴露给模型，不得根据模型或产品品牌推断；无法确认时为 `unknown`。
+
+**路由规则**：
+1. `multimodal` 且模型可直接访问图片时，必须使用模型自身能力处理图片；不得仅为识图调用或探测 MCP。
+2. `text-only`、`unknown` 或图片不可达时，才进入 MCP 图片识别路径。
+3. 智普与 MiniMax 没有固定服务优先级；两者都可用时按任务适配性或用户指定任选其一，一个不可用时可改用另一个，全部不可用时必须如实报告识图未完成及原因，不得伪装成功或输出未经识别的猜测内容。
+
+**可用性探测与任务范围缓存**：
+1. 进入 MCP 路径后，调用图片工具前必须确认客户端能发现对应 server、其图片工具可见并完成最小能力确认。首次对智普（`zai-mcp-server`）和 MiniMax 各探测一次；同一 `task-scope-id` 内每个 provider 至多探测一次。探测结论分别写入 `cadence/cache/mcp-availability/<task-scope-id>.json`；scope id 必须在任务开始时生成并在任务内复用。
+2. 每个 provider 分别独立记录，禁止合并为单一总布尔值。`status` 仅限 `unknown`、`available`、`unavailable` 三态：`available` 直接调用，`unavailable` 跳过且不得在同一 scope 内无限重试，`unknown` 允许按首次流程探测；本次调用失败后也不得在同一 scope 内对该 provider 反复重试。
+3. 缓存文件损坏、schema 版本不识别或 scope 不匹配时，相关状态一律视为 `unknown` 并允许重新探测；MCP 配置变更、客户端重连或用户显式要求重检时，既有记录同样失效。
+4. 状态记录仅可包含固定白名单字段：scope 标识、生成时间、provider 名称、status、探测时间、探测方式与原因。不得记录 API Key、Authorization 凭据、原始错误响应正文、图片内容、MCP 返回正文或敏感 URL。项目 `.gitignore` 必须精确包含一行 `cadence/cache/mcp-availability/`，以排除该目录而非整个 `cadence/cache/`。
 
 ### 智普视觉理解 MCP（可选）
+
+图片任务必须先遵循《图片识别路由与 MCP 可用性状态》小节；本节排列顺序不代表服务优先级。
 
 **用途**：图像分析、视频理解、UI 截图转代码、OCR 文字提取、错误截图诊断
 
@@ -115,8 +141,11 @@
 
 **使用规则**：
 1. 图片建议放到本地目录，通过对话指定图片名称或路径来调用
-2. 直接在客户端粘贴图片无法调用此 MCP（Claude Code 除外）
+2. 直接在客户端粘贴图片无法调用此 MCP（Claude Code 除外；pi 经 pi-mcp-adapter 调用时同样需通过本地路径指定图片）
 3. 需要安装最新版本（>= 0.1.2）
+4. 前提：Node.js 版本需 >= 18
+5. `npx` 可能命中旧缓存；排障时可一次性使用 `@z_ai/mcp-server@latest` 或清理 npx 缓存，配置中的 args 保持不变
+6. `Z_AI_MODE` 可选 `ZHIPU` 或 `ZAI`，本模板固定为 `ZHIPU`
 
 **典型工作流**：
 ```
@@ -151,7 +180,6 @@
 **使用规则**：
 1. 基于 HTTP 协议的远程服务，无需本地安装运行时
 2. 搜索结果包含标题、URL、摘要等结构化信息
-3. **优先级规则**：当需要进行网络搜索时，**优先使用 MiniMax Token Plan MCP**。只有在 MiniMax 不可用时，才回退到模型自带的 WebSearch 工具或其他联网搜索功能（如智普联网搜索 MCP）
 
 **典型工作流**：
 ```
@@ -184,6 +212,7 @@
 **使用规则**：
 1. 基于 HTTP 协议的远程服务，无需本地安装运行时
 2. 返回结构化数据，包含标题、正文、元数据等
+3. 目标站点有反爬或登录墙时可能抓取失败，属预期结果，不要反复重试
 
 **典型工作流**：
 ```
@@ -218,6 +247,7 @@
 **使用规则**：
 1. 基于 HTTP 协议的远程服务（基于 zread.ai），无需本地安装运行时
 2. 支持搜索文档、浏览结构、读取代码三种操作
+3. 仅支持公开 GitHub 仓库，且需已被 zread.ai 收录；未收录仓库查询失败属预期
 
 **典型工作流**：
 ```
@@ -234,7 +264,14 @@
 > 搜索 prisma/prisma 仓库中关于连接池超时的 Issue
 ```
 
+### 智普 MCP 通用说明（可选）
+
+1. SSE 备用端点为 `https://open.bigmodel.cn/api/mcp/<name>/sse?Authorization=<KEY>`（`web_search_prime`、`web_reader`、`zread`），仅在 HTTP 端点不可用时临时排障使用；密钥出现在 URL 中会落入日志与 shell 历史，不得写入默认配置。
+2. Claude Code + GLM Coding Plan 场景下，服务端已内置联网搜索、网页读取和 `image_analysis`，可能与本地四个 server 的工具重复，可按需禁用；Codex、pi、Kimi 无内置能力，默认仍需这四个 server。
+
 ### MiniMax Token Plan MCP（可选）
+
+图片任务必须先遵循《图片识别路由与 MCP 可用性状态》小节；本节排列顺序不代表服务优先级。
 
 **用途**：网络搜索和图片理解
 
@@ -262,8 +299,7 @@
 
 **使用规则**：
 1. 基于 uvx 运行的本地 MCP 服务
-2. 验证配置：进入 Claude Code 后输入 `/mcp`，能看到 `web_search` 和 `understand_image` 说明配置成功
-3. **优先级规则**：当需要进行网络搜索时，**优先使用 MiniMax Token Plan MCP**。只有在 MiniMax 不可用时，才回退到模型自带的 WebSearch 工具或其他联网搜索功能（如智普联网搜索 MCP）
+2. 验证配置：在 Claude Code 或 pi 中输入 `/mcp`（pi 的 `/mcp` 由 pi-mcp-adapter 提供），能看到 `web_search` 和 `understand_image` 说明配置成功
 
 **典型工作流**：
 ```
@@ -277,9 +313,10 @@
 ### 智普/MiniMax API Key 安全提醒
 
 > **安全警告**
-> 1. 请自行前往对应平台获取 API Key，不要将真实密钥告诉 Claude Code
+> 1. 请自行前往对应平台获取 API Key，不要将真实密钥告诉 AI 客户端（Claude Code、Codex、pi、Kimi 等）
 > 2. 配置文件中使用占位符，用户需自行替换为真实密钥
 > 3. `.mcp.json` 已在 `.gitignore` 中排除，不会提交到版本控制
+> 4. 团队版 Coding Plan Key 与智谱平台其他 API Key 不通用；使用团队额度必须使用团队套餐 Key，个人/团队 Key 获取入口不同。
 >
 > - 智普 API Key 获取地址：https://open.bigmodel.cn/usercenter/apikeys
 > - MiniMax API Key 获取地址：https://platform.minimaxi.com/subscribe/token-plan
