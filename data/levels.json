@@ -1,32 +1,32 @@
 [
   {
-    "id": "level-1",
+    "id": "opening",
     "name": "波之国突围",
-    "difficulty": "novice",
-    "enemyIds": ["enemy-1", "enemy-2"]
+    "difficulty": "简单",
+    "unlocked": true
   },
   {
-    "id": "level-2",
+    "id": "defense",
     "name": "木叶保卫战",
-    "difficulty": "genin",
-    "enemyIds": ["enemy-3"]
+    "difficulty": "普通",
+    "unlocked": true
   },
   {
-    "id": "level-3",
+    "id": "exam",
     "name": "中忍考试",
-    "difficulty": "chunin",
-    "enemyIds": ["enemy-4", "enemy-5", "enemy-6"]
+    "difficulty": "困难",
+    "unlocked": false
   },
   {
-    "id": "level-4",
+    "id": "pursuit",
     "name": "晓之追击",
-    "difficulty": "jonin",
-    "enemyIds": ["enemy-7"]
+    "difficulty": "困难",
+    "unlocked": false
   },
   {
-    "id": "level-5",
+    "id": "valley",
     "name": "终末之谷",
-    "difficulty": "master",
-    "enemyIds": ["enemy-8", "enemy-9"]
+    "difficulty": "困难",
+    "unlocked": false
   }
 ]

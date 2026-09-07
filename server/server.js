@@ -4,7 +4,7 @@ const http = require('node:http');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
-const LEVEL_DIFFICULTIES = new Set(['novice', 'genin', 'chunin', 'jonin', 'master']);
+const LEVEL_DIFFICULTIES = new Set(['简单', '普通', '困难']);
 
 function sendJson(response, statusCode, body) {
   const payload = JSON.stringify(body);
@@ -40,8 +40,8 @@ async function readLevels(dataPath) {
     if (level === null || typeof level !== 'object' || Array.isArray(level)) {
       throw new Error('Each level must be an object.');
     }
-    if (typeof level.id !== 'string' || !/^level-\d+$/.test(level.id) || seen.has(level.id)) {
-      throw new Error('Each level must have a unique id matching level-<number>.');
+    if (typeof level.id !== 'string' || level.id.length === 0 || seen.has(level.id)) {
+      throw new Error('Each level must have a unique non-empty id.');
     }
     if (typeof level.name !== 'string' || level.name.trim().length === 0) {
       throw new Error('Each level must have a non-empty name.');
@@ -49,12 +49,8 @@ async function readLevels(dataPath) {
     if (!LEVEL_DIFFICULTIES.has(level.difficulty)) {
       throw new Error('Each level must have a supported difficulty.');
     }
-    if (
-      !Array.isArray(level.enemyIds) ||
-      level.enemyIds.length === 0 ||
-      level.enemyIds.some((id) => typeof id !== 'string' || id.length === 0)
-    ) {
-      throw new Error('Each level must contain at least one enemy id.');
+    if (typeof level.unlocked !== 'boolean') {
+      throw new Error('Each level must have an unlocked boolean.');
     }
     seen.add(level.id);
   }

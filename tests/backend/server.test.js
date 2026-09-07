@@ -79,37 +79,47 @@ describe('GET /api/levels', () => {
       assert.equal(contentType, 'application/json; charset=utf-8');
       assert.equal(Array.isArray(body), true);
       assert.equal(body.length, 5);
+      const ids = new Set();
       for (const level of body) {
         assert.equal(typeof level.id, 'string');
-        assert.match(level.id, /^level-\d+$/);
+        assert.ok(level.id.length > 0);
+        assert.equal(ids.has(level.id), false);
+        ids.add(level.id);
         assert.equal(typeof level.name, 'string');
         assert.ok(level.name.length > 0);
-        assert.ok(['novice', 'genin', 'chunin', 'jonin', 'master'].includes(level.difficulty));
-        assert.ok(Array.isArray(level.enemyIds));
-        assert.ok(level.enemyIds.length > 0);
+        assert.ok(['简单', '普通', '困难'].includes(level.difficulty));
+        assert.equal(typeof level.unlocked, 'boolean');
       }
     })
   );
 
-  for (const fixture of ['missing', 'invalid-json', 'invalid-schema']) {
+  for (const fixture of ['absent', 'invalid-json', 'invalid-schema']) {
     it(
       `returns LEVEL_DATA_UNAVAILABLE when data ${fixture.replaceAll('-', ' ')}`,
-      withServer({ dataPath: path.join(fixturesRoot, `levels-${fixture}.json`) }, async (server) => {
-        const { response, contentType, text } = await request(server, '/api/levels');
-        const body = JSON.parse(text);
+      withServer(
+        {
+          dataPath:
+            fixture === 'absent'
+              ? path.join(fixturesRoot, 'levels-absent.json')
+              : path.join(fixturesRoot, `levels-${fixture}.json`)
+        },
+        async (server) => {
+          const { response, contentType, text } = await request(server, '/api/levels');
+          const body = JSON.parse(text);
 
-        assert.equal(response.status, 500);
-        assert.equal(contentType, 'application/json; charset=utf-8');
-        assert.equal(body.error.code, 'LEVEL_DATA_UNAVAILABLE');
-        assert.equal(typeof body.error.message, 'string');
-        assert.ok(body.error.message.length > 0);
-        assert.equal(body.error.stack, undefined);
-        assert.equal(
-          body.error.message.includes(fixturesRoot),
-          false,
-          'error message must not expose internal paths'
-        );
-      })
+          assert.equal(response.status, 500);
+          assert.equal(contentType, 'application/json; charset=utf-8');
+          assert.equal(body.error.code, 'LEVEL_DATA_UNAVAILABLE');
+          assert.equal(typeof body.error.message, 'string');
+          assert.ok(body.error.message.length > 0);
+          assert.equal(body.error.stack, undefined);
+          assert.equal(
+            body.error.message.includes(fixturesRoot),
+            false,
+            'error message must not expose internal paths'
+          );
+        }
+      )
     );
   }
 });

@@ -1,6 +1,8 @@
 [
   {
-    "id": "level-1",
-    "name": "第一关"
+    "id": "opening",
+    "name": "第一关",
+    "difficulty": "简单",
+    "unlocked": "yes"
   }
 ]
