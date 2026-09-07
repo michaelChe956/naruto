@@ -7,7 +7,8 @@
 - **Coding 项目**：默认角色为**谨慎执行者**，优先阅读 issue、现有代码和约束，再按指令完成实现、验证与结果汇报。
 - **非 Coding 项目**：默认遵循文档、配置、规则维护职责，非必要不编写代码。
 
-<!-- cadence-managed:openspec-superpowers-routing:v3:start -->
+<!-- cadence-managed:openspec-superpowers-routing:v4:start -->
+Cadence L0 路由内核 v4
 ## OpenSpec 与 Superpowers 任务路由
 
 Skill 调用：Claude/Kimi 原生调用；Codex/pi 清单选择后将用途并入首段回执，并立即全文读取对应 SKILL.md。首段输出路由回执；Skill 调用后才读仓库规则或用仓库工具。
@@ -39,7 +40,7 @@ Skill 调用：Claude/Kimi 原生调用；Codex/pi 清单选择后将用途并�
 产物自动提交开关：完成 design/plan 文档或实现类产物（代码、测试、配置）写入后读取入口“产物自动提交（design/plan/code）”开关，`关闭` 时禁止 `git commit`、只汇报路径；CLAUDE.md 为准、不一致按 `关闭`。
 
 阶段切换必须重新路由：新任务、只读转修改、契约获批、apply 前、上下文恢复后、完工声明前。
-<!-- cadence-managed:openspec-superpowers-routing:v3:end -->
+<!-- cadence-managed:openspec-superpowers-routing:v4:end -->
 
 ## 强制规则
 
@@ -148,4 +149,21 @@ Skill 调用：Claude/Kimi 原生调用；Codex/pi 清单选择后将用途并�
 
 > 以下配置由初始化脚本维护。
 
-- **产物自动提交（design/plan/code）**：关闭
+- **产物自动提交（design/plan/code）**：开启
+
+<!-- cadence-managed:codex-rules-inline:v1:start -->
+## Cadence 规则内联投影（源 .claude/rules/，rule-config 生成，勿手改）
+- code-reading.md 工具优先级：codegraph → ast-grep outline；Grep、Glob、Bash、Bash、Bash 受限（条件：project_type=coding AND codegraph_enabled）
+- mcp-servers.md 工具优先级：Context7；WebSearch、WebFetch 受限（条件：context7_configured）
+- README.md：框架内置规则目录
+- code-reading.md：代码阅读规则
+- code-usage.md：代码使用规则
+- document-storage.md：文档存储规则
+- language.md：语言规则
+- markdown-format.md：Markdown 格式规则
+- mcp-servers.md：MCP Server 使用规则
+- openspec-superpowers-workflow.md：OpenSpec 与 Superpowers 协作规则
+- playwright.md：Playwright CLI 使用规则
+- serena-usage.md：Serena 使用规则
+铁律（失败关闭）：达 OpenSpec 阈值（新行为/公共契约/验收边界变化）先 brainstorming→OpenSpec；无已确认 Plan 不改实现；TDD 先失败测试；无新鲜证据不声称完成；必调 Skill 缺失则停止。
+<!-- cadence-managed:codex-rules-inline:v1:end -->
