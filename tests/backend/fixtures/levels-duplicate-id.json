@@ -1,0 +1,4 @@
+[
+  { "id": "level-1", "name": "第一关", "difficulty": "简单", "unlocked": true },
+  { "id": "level-1", "name": "重复ID关卡", "difficulty": "普通", "unlocked": true }
+]

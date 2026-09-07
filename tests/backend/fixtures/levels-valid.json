@@ -1,0 +1,7 @@
+[
+  { "id": "level-1", "name": "木叶演习场", "difficulty": "简单", "unlocked": true },
+  { "id": "level-2", "name": "死亡森林", "difficulty": "普通", "unlocked": true },
+  { "id": "level-3", "name": "波之国大桥", "difficulty": "普通", "unlocked": false },
+  { "id": "level-4", "name": "中忍考试会场", "difficulty": "困难", "unlocked": false },
+  { "id": "level-5", "name": "终结之谷", "difficulty": "困难", "unlocked": false }
+]

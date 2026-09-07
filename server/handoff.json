@@ -1,0 +1,43 @@
+{
+  "work_item": "WI-001",
+  "work_item_revision_id": "work_item_revision_aba656911e5dc118eb3c206c",
+  "contract_refs": ["CT-001"],
+  "service_lifecycle": {
+    "module": "server/server.js",
+    "factory": "createServer(options)",
+    "options_defaults": {
+      "dataPath": "data/levels.json",
+      "staticRoot": "web/"
+    },
+    "start": "start({ port }) resolves { origin, port, stop }; origin = http://127.0.0.1:<actual port>",
+    "stop": "stop() closes server and all connections; idempotent",
+    "port_precedence": "start({ port }) > createServer({ port }) > PORT env > 3000"
+  },
+  "api_path": "/api/levels",
+  "page_entry_path": "web/index.html",
+  "default_port": 3000,
+  "port_env": "PORT",
+  "container_markers": ["id=loading", "id=level-list", "id=error-message"],
+  "levels_api_success_shape": {
+    "status": 200,
+    "content_type": "application/json; charset=utf-8",
+    "body": "top-level array of exactly 5 items; item = { id: string(non-empty, unique), name: string(non-empty), difficulty: \"简单\"|\"普通\"|\"困难\", unlocked: boolean }"
+  },
+  "levels_api_error_shape": {
+    "content_type": "application/json; charset=utf-8",
+    "body": { "error": { "code": "<string>", "message": "<string, no stack, no absolute path>" } },
+    "status_map": {
+      "LEVEL_DATA_UNAVAILABLE": 500,
+      "NOT_FOUND": 404,
+      "METHOD_NOT_ALLOWED": 405,
+      "INTERNAL_ERROR": 500
+    }
+  },
+  "static_hosting": {
+    "root": "web/",
+    "entry": "/ -> /index.html",
+    "content_type": "by file extension",
+    "missing_resource": "404 text/plain",
+    "path_traversal": "normalized via node:path; requests escaping staticRoot rejected with 403"
+  }
+}
