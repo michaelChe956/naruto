@@ -31,6 +31,8 @@ const TEXT_CONTENT_TYPE = 'text/plain; charset=utf-8'
 
 /** 关卡数据契约要求的固定数量 */
 const REQUIRED_LEVEL_COUNT = 5
+/** difficulty 取值集合契约（CT-004）：恰为三值 */
+const DIFFICULTY_VALUES = new Set(['简单', '普通', '困难'])
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -85,7 +87,8 @@ function sendText (res, statusCode, message, extraHeaders) {
  * - 顶层数组，长度恰好 5；
  * - 元素为普通对象；
  * - id 非空字符串且文件内唯一；name 非空字符串；
- * - difficulty 为有限数字；unlocked 为布尔值。
+ * - difficulty 恰为「简单、普通、困难」三个字符串值之一（CT-004）；
+ * - unlocked 为布尔值。
  */
 function validateLevels (levels) {
   if (!Array.isArray(levels) || levels.length !== REQUIRED_LEVEL_COUNT) {
@@ -106,7 +109,7 @@ function validateLevels (levels) {
     if (typeof level.name !== 'string' || level.name.length === 0) {
       return false
     }
-    if (typeof level.difficulty !== 'number' || !Number.isFinite(level.difficulty)) {
+    if (typeof level.difficulty !== 'string' || !DIFFICULTY_VALUES.has(level.difficulty)) {
       return false
     }
     if (typeof level.unlocked !== 'boolean') {

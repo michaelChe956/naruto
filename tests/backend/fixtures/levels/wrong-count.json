@@ -1,6 +1,6 @@
 [
-  { "id": "level-1", "name": "木叶村入口", "difficulty": 1, "unlocked": true },
-  { "id": "level-2", "name": "训练场", "difficulty": 2, "unlocked": true },
-  { "id": "level-3", "name": "死亡森林", "difficulty": 3, "unlocked": false },
-  { "id": "level-4", "name": "中忍考试会场", "difficulty": 4, "unlocked": false }
+  { "id": "level-1", "name": "木叶村入口", "difficulty": "简单", "unlocked": true },
+  { "id": "level-2", "name": "训练场", "difficulty": "简单", "unlocked": true },
+  { "id": "level-3", "name": "死亡森林", "difficulty": "普通", "unlocked": false },
+  { "id": "level-4", "name": "中忍考试会场", "difficulty": "困难", "unlocked": false }
 ]

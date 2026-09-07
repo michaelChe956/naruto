@@ -8,7 +8,7 @@
  * - 每个元素为普通对象；
  * - id：非空字符串，且在同一数据文件内唯一；
  * - name：非空字符串；
- * - difficulty：有限数字；
+ * - difficulty：恰为「简单、普通、困难」三个字符串值之一（CT-004）；
  * - unlocked：布尔值。
  */
 
@@ -80,8 +80,11 @@ function assertLevelsShape (levels) {
     ids.add(level.id)
     assert.equal(typeof level.name, 'string', 'name 必须是字符串')
     assert.ok(level.name.length > 0, 'name 必须非空')
-    assert.equal(typeof level.difficulty, 'number', 'difficulty 必须是数字')
-    assert.equal(Number.isFinite(level.difficulty), true, 'difficulty 必须是有限数字')
+    assert.equal(
+      ['简单', '普通', '困难'].includes(level.difficulty),
+      true,
+      'difficulty 必须恰为「简单、普通、困难」三值之一（CT-004）'
+    )
     assert.equal(typeof level.unlocked, 'boolean', 'unlocked 必须是布尔值')
   }
 }
