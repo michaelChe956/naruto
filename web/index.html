@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>火影 H5 - 关卡选择</title>
+</head>
+<body>
+  <main>
+    <h1>选择关卡</h1>
+    <!-- 加载态：请求挂起期间展示（TASK-008） -->
+    <div id="loading">加载中…</div>
+    <!-- 错误提示：请求失败或数据无效时展示可读错误（TASK-008 / AC-007） -->
+    <div id="error-message" hidden></div>
+    <!-- 关卡列表：渲染关卡名称与难度，锁定关卡不可选择（TASK-008 / AC-006） -->
+    <ul id="level-list"></ul>
+  </main>
+  <script src="level-select.js"></script>
+</body>
+</html>
