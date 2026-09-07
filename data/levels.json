@@ -1,0 +1,32 @@
+[
+  {
+    "id": "level-1",
+    "name": "波之国突围",
+    "difficulty": "novice",
+    "enemyIds": ["enemy-1", "enemy-2"]
+  },
+  {
+    "id": "level-2",
+    "name": "木叶保卫战",
+    "difficulty": "genin",
+    "enemyIds": ["enemy-3"]
+  },
+  {
+    "id": "level-3",
+    "name": "中忍考试",
+    "difficulty": "chunin",
+    "enemyIds": ["enemy-4", "enemy-5", "enemy-6"]
+  },
+  {
+    "id": "level-4",
+    "name": "晓之追击",
+    "difficulty": "jonin",
+    "enemyIds": ["enemy-7"]
+  },
+  {
+    "id": "level-5",
+    "name": "终末之谷",
+    "difficulty": "master",
+    "enemyIds": ["enemy-8", "enemy-9"]
+  }
+]
