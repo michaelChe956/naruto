@@ -1,0 +1,7 @@
+[
+  { "id": "level-01", "name": "波之国护送任务", "difficulty": "简单", "unlocked": true },
+  { "id": "level-02", "name": "中忍考试预选赛", "difficulty": "普通", "unlocked": true },
+  { "id": "level-03", "name": "寻找纲手之旅", "difficulty": "困难", "unlocked": true },
+  { "id": "level-04", "name": "终结之谷对决", "difficulty": "普通", "unlocked": false },
+  { "id": "level-05", "name": "佩恩袭击木叶", "difficulty": "困难", "unlocked": false }
+]
