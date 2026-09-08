@@ -1,0 +1,42 @@
+{
+  "work_item_revision_id": "work_item_revision_1bf89e67eebe54ed83e02e4e",
+  "module": "server/server.js",
+  "api_path": "/api/levels",
+  "default_port": 3000,
+  "port_env": "PORT",
+  "data_path": "data/levels.json",
+  "static_root": "web/",
+  "exports": ["createServer", "start", "stop"],
+  "lifecycle": {
+    "factory": "createServer({ dataPath?, staticRoot?, port? })",
+    "port_precedence": "start({ port }) > createServer({ port }) > PORT env > 3000",
+    "start": "start({ port }) 解析为 { origin, port, stop }；port 为 0 时使用实际分配端口，origin 为 http://127.0.0.1:<实际端口>",
+    "stop": "stop() 关闭服务器与全部连接；幂等；停止后可再次 start"
+  },
+  "levels_data_contract": {
+    "top_level": "数组且恰好 5 项",
+    "item": {
+      "id": "非空字符串且文件内唯一",
+      "name": "非空字符串",
+      "difficulty": "简单|普通|困难",
+      "unlocked": "布尔"
+    },
+    "invalid_behavior": "任一不满足判定数据无效，GET /api/levels 返回 500 JSON 错误"
+  },
+  "error_contract": {
+    "json_content_type": "application/json; charset=utf-8",
+    "body": { "error": { "code": "<string>", "message": "<string，不含堆栈与绝对路径>" } },
+    "status_map": {
+      "LEVEL_DATA_UNAVAILABLE": 500,
+      "NOT_FOUND": 404,
+      "METHOD_NOT_ALLOWED": 405,
+      "INTERNAL_ERROR": 500
+    }
+  },
+  "static_hosting_contract": {
+    "entry": "GET / -> staticRoot 默认页面 index.html",
+    "path_resolution": "normalize + resolve 后必须仍在 staticRoot 内（含根自身）",
+    "content_type": "按文件扩展名",
+    "missing_or_traversal": "404 文本响应（text/plain; charset=utf-8）"
+  }
+}
