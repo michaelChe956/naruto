@@ -82,6 +82,20 @@ test('数据夹具异常时 GET /api/levels 返回 500 与 LEVEL_DATA_UNAVAILABL
       assert.equal(body.error.code, 'LEVEL_DATA_UNAVAILABLE', `${label}：错误码应为 LEVEL_DATA_UNAVAILABLE`);
       assert.equal(typeof body.error.message, 'string');
       assert.notEqual(body.error.message, '', `${label}：message 必须非空`);
+      assert.ok(
+        !body.error.message.includes(dataPath),
+        `${label}：message 不得泄露数据文件路径（CT-002）`
+      );
+      assert.ok(
+        !body.error.message.includes('ENOENT') && !body.error.message.includes('Unexpected'),
+        `${label}：message 不得包含系统错误细节（CT-002），实际: ${body.error.message}`
+      );
+      if (label === 'JSON 解析失败') {
+        assert.ok(
+          !body.error.message.includes('valid json'),
+          `${label}：message 不得泄露数据文件内容片段（CT-002），实际: ${body.error.message}`
+        );
+      }
     });
   }
 

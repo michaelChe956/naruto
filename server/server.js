@@ -52,14 +52,14 @@ function loadLevels(dataPath) {
   try {
     raw = fs.readFileSync(dataPath, 'utf8');
   } catch (err) {
-    throw new LevelDataUnavailableError(`无法读取关卡数据文件: ${err.message}`);
+    throw new LevelDataUnavailableError('关卡数据暂不可用，请稍后重试');
   }
 
   let parsed;
   try {
     parsed = JSON.parse(raw);
   } catch (err) {
-    throw new LevelDataUnavailableError(`关卡数据 JSON 解析失败: ${err.message}`);
+    throw new LevelDataUnavailableError('关卡数据格式错误，请稍后重试');
   }
 
   validateLevels(parsed);
@@ -107,7 +107,9 @@ function handleApiLevels(req, res, context) {
     const levels = loadLevels(context.dataPath);
     sendJson(res, 200, levels);
   } catch (err) {
-    sendError(res, 500, 'LEVEL_DATA_UNAVAILABLE', err.message);
+    const message =
+      err instanceof LevelDataUnavailableError ? err.message : '关卡数据暂不可用，请稍后重试';
+    sendError(res, 500, 'LEVEL_DATA_UNAVAILABLE', message);
   }
 }
 
@@ -145,7 +147,7 @@ function serveStatic(req, res, pathname, staticRoot) {
       if (err.code === 'ENOENT' || err.code === 'EISDIR') {
         sendText(res, 404, 'Not Found');
       } else {
-        sendError(res, 500, 'INTERNAL_ERROR', err.message);
+        sendError(res, 500, 'INTERNAL_ERROR', '静态资源服务暂时不可用');
       }
       return;
     }
