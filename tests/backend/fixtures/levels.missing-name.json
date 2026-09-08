@@ -1,0 +1,7 @@
+[
+  { "id": "test-001", "difficulty": "简单", "unlocked": true },
+  { "id": "test-002", "name": "练习·手里剑投掷", "difficulty": "简单", "unlocked": true },
+  { "id": "test-003", "name": "练习·忍术基础", "difficulty": "普通", "unlocked": false },
+  { "id": "test-004", "name": "练习·体术对练", "difficulty": "普通", "unlocked": false },
+  { "id": "test-005", "name": "练习·模拟实战", "difficulty": "困难", "unlocked": false }
+]

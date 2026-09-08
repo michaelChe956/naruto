@@ -1,0 +1,7 @@
+[
+  { "id": "level-001", "name": "木叶村入门试炼", "difficulty": "简单", "unlocked": true },
+  { "id": "level-002", "name": "死亡森林生存演习", "difficulty": "简单", "unlocked": true },
+  { "id": "level-003", "name": "中忍考试笔试", "difficulty": "普通", "unlocked": true },
+  { "id": "level-004", "name": "大蛇丸的袭击", "difficulty": "困难", "unlocked": false },
+  { "id": "level-005", "name": "一尾守鹤暴走", "difficulty": "困难", "unlocked": false }
+]
