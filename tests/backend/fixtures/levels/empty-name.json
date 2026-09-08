@@ -1,0 +1,7 @@
+[
+  { "id": "level-1", "name": "夹具关卡一", "difficulty": "简单", "unlocked": true },
+  { "id": "level-2", "name": "夹具关卡二", "difficulty": "普通", "unlocked": false },
+  { "id": "level-3", "name": "", "difficulty": "困难", "unlocked": false },
+  { "id": "level-4", "name": "夹具关卡四", "difficulty": "简单", "unlocked": true },
+  { "id": "level-5", "name": "夹具关卡五", "difficulty": "普通", "unlocked": false }
+]
