@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>火影关卡选择</title>
+  <style>
+    body { font-family: system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; margin: 2rem; }
+    h1 { font-size: 1.5rem; }
+    .hidden { display: none; }
+    .level-item { display: block; width: 100%; max-width: 24rem; margin: 0.5rem 0; padding: 0.75rem 1rem; font-size: 1rem; text-align: left; cursor: pointer; }
+    .level-locked { opacity: 0.5; cursor: not-allowed; }
+    #error-message { color: #b00020; }
+    #loading { color: #555; }
+  </style>
+</head>
+<body>
+  <h1>关卡选择</h1>
+  <p id="loading">关卡加载中……</p>
+  <div id="level-list" class="hidden"></div>
+  <p id="error-message" class="hidden"></p>
+  <script src="level-select.js"></script>
+</body>
+</html>
