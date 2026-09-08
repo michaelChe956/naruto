@@ -121,3 +121,13 @@ test('AC-013: 缺失静态资源返回 404 文本响应', async () => {
     assert.ok(body.trim().length > 0, '404 文本响应必须有非空文本内容');
   });
 });
+
+test('CT-006 规范示例: 缺失静态资源 GET /missing.html 返回 404 纯文本 Not Found', async () => {
+  await withServer(async ({ origin }) => {
+    const res = await fetch(`${origin}/missing.html`);
+    assert.strictEqual(res.status, 404);
+    assert.match(res.headers.get('content-type') || '', /^text\/plain/);
+    const body = await res.text();
+    assert.strictEqual(body, 'Not Found');
+  });
+});
