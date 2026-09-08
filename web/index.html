@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>木叶试炼 · 关卡选择</title>
+  </head>
+  <body>
+    <h1>关卡选择</h1>
+    <main>
+      <p id="loading">关卡加载中…</p>
+      <ul id="level-list"></ul>
+      <p id="error-message" hidden></p>
+    </main>
+    <script src="./level-select.js"></script>
+    <script>
+      initLevelSelect({
+        document: window.document,
+        fetchImpl: (...args) => window.fetch(...args),
+      });
+    </script>
+  </body>
+</html>
