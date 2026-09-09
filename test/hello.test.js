@@ -6,6 +6,7 @@
 
 const assert = require('node:assert/strict');
 const http = require('node:http');
+const net = require('node:net');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { test } = require('node:test');
@@ -15,11 +16,14 @@ const HOST = '127.0.0.1';
 const PORT = 3000;
 const READY_TIMEOUT_MS = 5000;
 const PROBE_INTERVAL_MS = 100;
+const EXIT_WAIT_TIMEOUT_MS = 5000;
 
 // 以子进程方式启动 server.js；stderr 收集到 chunks 中，便于失败时输出诊断信息。
-function startServer(stderrChunks) {
+// envOverrides 用于向子进程注入环境变量（如 PORT 覆盖）。
+function startServer(stderrChunks, envOverrides) {
   const child = spawn(process.execPath, [SERVER_ENTRY], {
     stdio: ['ignore', 'ignore', 'pipe'],
+    env: { ...process.env, ...envOverrides },
   });
   child.stderr.setEncoding('utf8');
   child.stderr.on('data', (chunk) => stderrChunks.push(chunk));
@@ -29,7 +33,7 @@ function startServer(stderrChunks) {
 }
 
 // 轮询探测直到服务可响应，或子进程退出/启动出错/超时。
-function waitForServerReady(child, getStderr) {
+function waitForServerReady(child, host, port, getStderr) {
   return new Promise((resolve, reject) => {
     let settled = false;
     let retryTimer = null;
@@ -46,7 +50,7 @@ function waitForServerReady(child, getStderr) {
     const readyTimer = setTimeout(() => {
       settle(
         new Error(
-          `server.js 在 ${READY_TIMEOUT_MS}ms 内未在 ${HOST}:${PORT} 提供服务。stderr: ${getStderr()}`
+          `server.js 在 ${READY_TIMEOUT_MS}ms 内未在 ${host}:${port} 提供服务。stderr: ${getStderr()}`
         )
       );
     }, READY_TIMEOUT_MS);
@@ -65,7 +69,7 @@ function waitForServerReady(child, getStderr) {
 
     const probe = () => {
       if (settled) return;
-      const req = http.get({ host: HOST, port: PORT, path: '/api/hello' }, (res) => {
+      const req = http.get({ host, port, path: '/api/hello' }, (res) => {
         res.resume();
         settle();
       });
@@ -79,10 +83,20 @@ function waitForServerReady(child, getStderr) {
   });
 }
 
+// 注册测试收尾：若子进程仍在运行则以 SIGTERM 终止并等待其退出，避免跨用例残留监听进程。
+function stopChildOnTeardown(t, child) {
+  t.after(async () => {
+    if (child.pid && child.exitCode === null && child.signalCode === null) {
+      child.kill('SIGTERM');
+      await new Promise((resolve) => child.once('exit', resolve));
+    }
+  });
+}
+
 // 发起 GET 请求，返回状态码与原始 body 字符串。
-function getRaw(pathname) {
+function getRaw(host, port, pathname) {
   return new Promise((resolve, reject) => {
-    const req = http.get({ host: HOST, port: PORT, path: pathname }, (res) => {
+    const req = http.get({ host, port, path: pathname }, (res) => {
       const chunks = [];
       res.on('data', (chunk) => chunks.push(chunk));
       res.on('end', () => {
@@ -99,20 +113,109 @@ function getRaw(pathname) {
 test('GET /api/hello 返回 200 且 body 恰为 {"message":"hello"}', async (t) => {
   const stderrChunks = [];
   const child = startServer(stderrChunks);
+  stopChildOnTeardown(t, child);
 
-  t.after(async () => {
-    if (child.pid && child.exitCode === null && child.signalCode === null) {
-      child.kill('SIGTERM');
-      await new Promise((resolve) => child.once('exit', resolve));
-    }
-  });
+  await waitForServerReady(child, HOST, PORT, () => stderrChunks.join(''));
 
-  await waitForServerReady(child, () => stderrChunks.join(''));
-
-  const { statusCode, rawBody } = await getRaw('/api/hello');
+  const { statusCode, rawBody } = await getRaw(HOST, PORT, '/api/hello');
 
   assert.equal(statusCode, 200);
   assert.deepEqual(JSON.parse(rawBody), { message: 'hello' });
   // “恰为”按字节级校验原始 body。
   assert.equal(rawBody, '{"message":"hello"}');
+});
+
+// CT-001：GET /api/hello 处理路径必须具备内部错误处理分支——
+// 处理过程抛出异常时返回 500 且 body 恰为 {"error":"internal"}，而非由 Node 默认断开连接。
+test('GET /api/hello 处理器异常时返回 500 且 body 恰为 {"error":"internal"}', async (t) => {
+  // 惰性引入以获取服务器工厂，注入必然抛错的 helloProvider 触发内部错误分支；
+  // 入口模块仅在直接运行时才监听端口。
+  const { createServer } = require('../server.js');
+
+  const server = createServer({
+    helloProvider: () => {
+      throw new Error('测试注入的内部错误');
+    },
+  });
+
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, HOST, resolve);
+  });
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+
+  const { port } = server.address();
+  const { statusCode, rawBody } = await getRaw(HOST, port, '/api/hello');
+
+  assert.equal(statusCode, 500);
+  assert.deepEqual(JSON.parse(rawBody), { error: 'internal' });
+  assert.equal(rawBody, '{"error":"internal"}');
+});
+
+// 借助监听 0 号端口获取一个当前可用端口（释放后存在极小的被抢占竞态，属可接受的测试代价）。
+function getFreePort() {
+  return new Promise((resolve, reject) => {
+    const prober = net.createServer();
+    prober.listen(0, HOST, () => {
+      const { port } = prober.address();
+      prober.close(() => resolve(port));
+    });
+    prober.once('error', reject);
+  });
+}
+
+// 端口健壮性：PORT 环境变量可覆盖默认监听端口，避免端口占用/并行环境下测试不稳定。
+test('PORT 环境变量可覆盖监听端口', async (t) => {
+  const freePort = await getFreePort();
+
+  const stderrChunks = [];
+  const child = startServer(stderrChunks, { PORT: String(freePort) });
+  stopChildOnTeardown(t, child);
+
+  await waitForServerReady(child, HOST, freePort, () => stderrChunks.join(''));
+
+  const { statusCode, rawBody } = await getRaw(HOST, freePort, '/api/hello');
+
+  assert.equal(statusCode, 200);
+  assert.equal(rawBody, '{"message":"hello"}');
+});
+
+// 等待子进程退出；超时则判定失败，避免套件因子进程未退出而无限挂起。
+function waitForExit(child) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      child.removeListener('exit', onExit);
+      reject(new Error(`子进程在 ${EXIT_WAIT_TIMEOUT_MS}ms 内未退出`));
+    }, EXIT_WAIT_TIMEOUT_MS);
+
+    function onExit(exitCode, exitSignal) {
+      clearTimeout(timer);
+      resolve([exitCode, exitSignal]);
+    }
+
+    child.once('exit', onExit);
+  });
+}
+
+// 端口健壮性：目标端口被占用时，入口应输出清晰错误并以非零状态退出，而非未处理 error 事件直接崩溃。
+test('端口被占用时以清晰错误退出而非未处理异常崩溃', async (t) => {
+  const occupier = net.createServer();
+  await new Promise((resolve, reject) => {
+    occupier.once('error', reject);
+    occupier.listen(0, HOST, resolve);
+  });
+  t.after(() => new Promise((resolve) => occupier.close(resolve)));
+  const occupiedPort = occupier.address().port;
+
+  const stderrChunks = [];
+  const child = startServer(stderrChunks, { PORT: String(occupiedPort) });
+  stopChildOnTeardown(t, child);
+
+  const [code, signal] = await waitForExit(child);
+
+  const stderr = stderrChunks.join('');
+  assert.equal(signal, null);
+  assert.equal(code, 1);
+  assert.match(stderr, /server 启动或运行失败/);
+  assert.match(stderr, /EADDRINUSE/);
 });
