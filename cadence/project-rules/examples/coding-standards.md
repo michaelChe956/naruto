@@ -51,7 +51,7 @@
 
 > 本节必须由项目初始化时结合代码库实际情况填写，不能保留空泛描述。
 >
-> **当前仓库已知事实（2026-08-21 确认）**：H5 游戏项目（`package.json` description: `naruto h5 game`），语言 JavaScript（`"type": "commonjs"`），包管理器 `pnpm`（CLAUDE.md 强制规则：前端项目必须使用 pnpm，禁止 npm/yarn）。仓库暂无源码目录与业务代码，游戏引擎、测试框架尚未配置。除已确认事实外，其余条目必须在首个功能开发前基于真实代码补齐，禁止凭空假设。
+> **当前仓库已知事实（2026-09-10 复核确认）**：H5 游戏项目（`package.json` description: `naruto h5 game`），语言 JavaScript（`"type": "commonjs"`），包管理器 `pnpm`（CLAUDE.md 强制规则：前端项目必须使用 pnpm，禁止 npm/yarn）。仓库暂无源码目录与业务代码，游戏引擎、测试框架尚未配置。除已确认事实外，其余条目必须在首个功能开发前基于真实代码补齐，禁止凭空假设。
 
 ### 2.1 模块与目录职责
 

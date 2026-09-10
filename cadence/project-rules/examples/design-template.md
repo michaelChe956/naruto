@@ -26,7 +26,7 @@
 
 > 本节是后续所有设计决策的依据。未确认项目事实前，不要写技术方案。
 
-> **当前仓库已知事实（2026-08-21 确认）**：H5 游戏项目（`package.json` description: `naruto h5 game`），语言 JavaScript（`"type": "commonjs"`），包管理器 `pnpm`（CLAUDE.md 强制规则）。游戏引擎、构建工具、测试框架尚未配置。除上述已确认事实外，其余条目必须基于代码库实际情况填写，不要假设不存在的规范。
+> **当前仓库已知事实（2026-09-10 复核确认）**：H5 游戏项目（`package.json` description: `naruto h5 game`），语言 JavaScript（`"type": "commonjs"`），包管理器 `pnpm`（CLAUDE.md 强制规则）。游戏引擎、构建工具、测试框架尚未配置。除上述已确认事实外，其余条目必须基于代码库实际情况填写，不要假设不存在的规范。
 
 ### 1.1 项目类型
 
