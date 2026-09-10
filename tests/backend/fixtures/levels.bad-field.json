@@ -1,0 +1,7 @@
+[
+  { "id": 1, "name": "木叶村门口", "difficulty": 1, "enemies": ["下忍逃兵"] },
+  { "id": 2, "name": "死亡森林", "difficulty": 2, "enemies": ["雨忍斥候", "毒蛇"] },
+  { "id": 3, "name": "中忍考试第三场", "difficulty": 9, "enemies": ["砂隐傀儡师"] },
+  { "id": 4, "name": "终结之谷", "difficulty": 4, "enemies": ["咒印状态佐助"] },
+  { "id": 5, "name": "大蛇丸地下研究所", "difficulty": 5, "enemies": ["音忍四人众", "大蛇丸"] }
+]
