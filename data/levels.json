@@ -1,0 +1,32 @@
+[
+  {
+    "id": "level-1",
+    "name": "木叶村大门",
+    "difficulty": "easy",
+    "unlocked": true
+  },
+  {
+    "id": "level-2",
+    "name": "忍者学校演习场",
+    "difficulty": "easy",
+    "unlocked": true
+  },
+  {
+    "id": "level-3",
+    "name": "死亡森林追击",
+    "difficulty": "normal",
+    "unlocked": false
+  },
+  {
+    "id": "level-4",
+    "name": "中忍考试会场",
+    "difficulty": "normal",
+    "unlocked": false
+  },
+  {
+    "id": "level-5",
+    "name": "终结之谷决战",
+    "difficulty": "hard",
+    "unlocked": false
+  }
+]
