@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>忍者之路 · 关卡选择</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      background: #f5f4ef;
+      color: #222;
+    }
+    main {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+    .level-list {
+      list-style: none;
+      margin: 16px 0;
+      padding: 0;
+      display: grid;
+      gap: 12px;
+    }
+    .level-item {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 16px;
+      border: 1px solid #8a8a8a;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+    }
+    .level-item--locked {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .level-error {
+      color: #b00020;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>关卡选择</h1>
+    <p id="level-loading" role="status">关卡加载中……</p>
+    <ul id="level-list" class="level-list" hidden></ul>
+    <p id="level-error" class="level-error" role="alert" hidden></p>
+  </main>
+  <script src="/level-select.js"></script>
+  <script>
+    initLevelSelect({ document: document, fetchImpl: fetch.bind(globalThis) });
+  </script>
+</body>
+</html>
