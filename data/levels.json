@@ -1,0 +1,7 @@
+[
+  { "id": "level-01", "name": "木叶村演习场", "difficulty": "简单", "unlocked": true },
+  { "id": "level-02", "name": "波之国护送", "difficulty": "简单", "unlocked": true },
+  { "id": "level-03", "name": "中忍考试预选", "difficulty": "普通", "unlocked": true },
+  { "id": "level-04", "name": "大蛇丸研究所", "difficulty": "困难", "unlocked": false },
+  { "id": "level-05", "name": "终末之谷决战", "difficulty": "困难", "unlocked": false }
+]
