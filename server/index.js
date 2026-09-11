@@ -88,8 +88,9 @@ async function handleApiRequest(req, res, pathname, dataPath) {
     try {
       const levels = await readLevels(dataPath);
       return sendJson(res, 200, levels);
-    } catch (error) {
-      return sendJson(res, 500, apiError(LEVEL_DATA_ERROR, error.message));
+    } catch {
+      // CT-001：对外固定文案，不透传内部错误详情。
+      return sendJson(res, 500, apiError(LEVEL_DATA_ERROR, '暂时无法加载关卡数据，请稍后重试'));
     }
   }
   return sendJson(res, 404, apiError('NOT_FOUND', `未知 API 路径：${pathname}`));

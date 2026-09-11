@@ -9,6 +9,8 @@ const { makeLevel, writeLevelsFixture } = require('./helpers/fixtures.js');
 
 const JSON_UTF8 = 'application/json; charset=utf-8';
 const EXE006_DIFFICULTIES = ['简单', '普通', '困难'];
+// CT-001：数据异常四条失败路径（缺失/不可读/解析失败/结构校验失败）的 500 message 固定文案。
+const LEVEL_DATA_FALLBACK_MESSAGE = '暂时无法加载关卡数据，请稍后重试';
 
 function isExe006Level(level) {
   return (
@@ -23,6 +25,13 @@ function assertErrorEnvelope(body) {
   assert.ok(body && typeof body === 'object' && !Array.isArray(body), `响应体应为 error 对象，实际：${JSON.stringify(body)}`);
   assert.ok(typeof body.error?.code === 'string' && body.error.code.length > 0, 'error.code 应为非空字符串');
   assert.ok(typeof body.error?.message === 'string' && body.error.message.length > 0, 'error.message 应为非空可读字符串');
+}
+
+// AC-002 + CT-001：数据异常 500 的 code 与固定文案约束。
+function assertLevelDataUnavailable(body) {
+  assertErrorEnvelope(body);
+  assert.equal(body.error.code, 'LEVEL_DATA_UNAVAILABLE');
+  assert.equal(body.error.message, LEVEL_DATA_FALLBACK_MESSAGE);
 }
 
 async function startFixture(t, options = {}) {
@@ -66,8 +75,7 @@ test('AC-002: dataPath 指向缺失文件时返回 500 与 LEVEL_DATA_UNAVAILABL
   assert.equal(res.status, 500);
   assert.equal(res.headers.get('content-type'), JSON_UTF8);
   const body = await res.json();
-  assertErrorEnvelope(body);
-  assert.equal(body.error.code, 'LEVEL_DATA_UNAVAILABLE');
+  assertLevelDataUnavailable(body);
 });
 
 test('AC-002: dataPath 内容非法 JSON 时返回 500 与 LEVEL_DATA_UNAVAILABLE 错误对象', async (t) => {
@@ -78,8 +86,7 @@ test('AC-002: dataPath 内容非法 JSON 时返回 500 与 LEVEL_DATA_UNAVAILABL
   assert.equal(res.status, 500);
   assert.equal(res.headers.get('content-type'), JSON_UTF8);
   const body = await res.json();
-  assertErrorEnvelope(body);
-  assert.equal(body.error.code, 'LEVEL_DATA_UNAVAILABLE');
+  assertLevelDataUnavailable(body);
 });
 
 test('AC-002: 夹具违反 EXE-006 字段约束时返回 500 与 LEVEL_DATA_UNAVAILABLE 错误对象', async (t) => {
@@ -90,8 +97,7 @@ test('AC-002: 夹具违反 EXE-006 字段约束时返回 500 与 LEVEL_DATA_UNAV
   assert.equal(res.status, 500);
   assert.equal(res.headers.get('content-type'), JSON_UTF8);
   const body = await res.json();
-  assertErrorEnvelope(body);
-  assert.equal(body.error.code, 'LEVEL_DATA_UNAVAILABLE');
+  assertLevelDataUnavailable(body);
 });
 
 test('AC-002: 夹具关卡 id 重复（结构校验失败）时返回 500 与 LEVEL_DATA_UNAVAILABLE', async (t) => {
@@ -101,8 +107,7 @@ test('AC-002: 夹具关卡 id 重复（结构校验失败）时返回 500 与 LE
   const res = await fetch(`${handle.origin}/api/levels`);
   assert.equal(res.status, 500);
   const body = await res.json();
-  assertErrorEnvelope(body);
-  assert.equal(body.error.code, 'LEVEL_DATA_UNAVAILABLE');
+  assertLevelDataUnavailable(body);
 });
 
 test('AC-004: 未知 API 路径返回 API-002 结构的 JSON 404', async (t) => {
