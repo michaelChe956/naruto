@@ -7,7 +7,7 @@
 > 2. 根据您的项目需求修改内容
 > 3. 在 `CLAUDE.md` 中添加规则引用此文件
 >
-> **当前项目注记（2026-09-10 复核）**：本仓库为 H5 游戏项目（JavaScript/CommonJS，包管理器 `pnpm`），尚未配置测试框架，`package.json` 的 `test` 为占位命令。落地时请先确定测试框架（如 Vitest / Jest）并同步更新本文命令示例；覆盖率阈值 80% 与 CLAUDE.md 一致。
+> **当前项目注记（2026-09-23 复核）**：本仓库为 H5 游戏项目（JavaScript/CommonJS，包管理器 `pnpm`），主工作区为配置壳（无源码）；实际代码位于 issue 分支 worktree（`.worktrees/aria-issues/issue_XXXX/`，已见 `test/` 目录，测试框架仍待确认）。尚未配置测试框架，`package.json` 的 `test` 为占位命令。落地时请先确定测试框架（如 Vitest / Jest）并同步更新本文命令示例；覆盖率阈值 80% 与 CLAUDE.md 一致。
 
 ---
 

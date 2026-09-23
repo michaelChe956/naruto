@@ -26,7 +26,7 @@
 
 > 本节是后续所有设计决策的依据。未确认项目事实前，不要写技术方案。
 
-> **当前仓库已知事实（2026-09-10 复核确认）**：H5 游戏项目（`package.json` description: `naruto h5 game`），语言 JavaScript（`"type": "commonjs"`），包管理器 `pnpm`（CLAUDE.md 强制规则）。游戏引擎、构建工具、测试框架尚未配置。除上述已确认事实外，其余条目必须基于代码库实际情况填写，不要假设不存在的规范。
+> **当前仓库已知事实（2026-09-23 复核确认）**：H5 游戏项目（`package.json` description: `naruto h5 game`），语言 JavaScript（`"type": "commonjs"`），包管理器 `pnpm`（CLAUDE.md 强制规则：前端项目必须使用 pnpm，禁止 npm/yarn），测试覆盖率阈值 80%（CLAUDE.md）。主工作区为配置壳（aria 3.6 矩阵测试目标仓，无源码目录）；实际代码位于 issue 分支 worktree（`.worktrees/aria-issues/issue_XXXX/`，已见 `server.js`、`status.html`、`test/`），设计落点与调用链必须以目标 worktree 内的真实代码为准。游戏引擎、构建工具、测试框架尚未在主工作区配置。除上述已确认事实外，其余条目必须基于代码库实际情况填写，不要假设不存在的规范。
 
 ### 1.1 项目类型
 
