@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>同源计数器</title>
+    <!-- 内联 data URI 图标：避免浏览器自动请求 /favicon.ico，全页零额外请求 -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23E8F0FE'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle' fill='%232F6FEB'%3E%2B%3C/text%3E%3C/svg%3E"
+    />
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: #f7f7f8;
+        color: #1f2328;
+      }
+      main {
+        padding: 2rem 2.5rem;
+        border-radius: 12px;
+        background: #ffffff;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        text-align: center;
+      }
+      #count-value {
+        display: block;
+        font-size: 4rem;
+        font-weight: 700;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+      }
+      #increment-button {
+        margin-top: 1rem;
+        padding: 0.6rem 1.6rem;
+        font-size: 1rem;
+        border: 0;
+        border-radius: 8px;
+        background: #2f6feb;
+        color: #ffffff;
+        cursor: pointer;
+      }
+      #increment-button:hover {
+        background: #1f5bd0;
+      }
+      #count-error {
+        margin: 0.75rem 0 0;
+        font-size: 0.875rem;
+        color: #b3261e;
+        min-height: 1.2em;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span id="count-value" aria-live="polite">0</span>
+      <button id="increment-button" type="button">递增</button>
+      <p id="count-error" role="alert"></p>
+    </main>
+
+    <script>
+      (function () {
+        'use strict';
+
+        // 同源相对路径：单页与计数 API 由同一进程同一端口提供，因此不需要绝对地址或跨域配置。
+        var COUNT_API_PATH = '/api/count';
+
+        var countValue = document.getElementById('count-value');
+        var incrementButton = document.getElementById('increment-button');
+        var errorText = document.getElementById('count-error');
+
+        function showError(message) {
+          errorText.textContent = message;
+        }
+
+        function clearError() {
+          errorText.textContent = '';
+        }
+
+        // 只接受 API 契约里的 {"count": <number>}；其他响应一律视为失败，不写进展示元素。
+        function readCount(payload) {
+          if (payload === null || typeof payload !== 'object' || typeof payload.count !== 'number') {
+            throw new Error('响应不是 {"count": <number>}');
+          }
+          return payload.count;
+        }
+
+        function renderCount(payload) {
+          countValue.textContent = String(readCount(payload));
+        }
+
+        function requestCount(method) {
+          clearError();
+          return fetch(COUNT_API_PATH, { method: method, headers: { accept: 'application/json' } })
+            .then(function (response) {
+              if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+              }
+              return response.json();
+            })
+            .then(renderCount)
+            .catch(function (error) {
+              showError('计数请求失败：' + error.message);
+            });
+        }
+
+        // 加载时读一次当前值，保证展示的是服务端真实读数（刷新后不会停留在旧值）。
+        requestCount('GET');
+
+        // 点击只做一件事：以 POST 响应里的 count 刷新展示元素，绝不在本地累加。
+        incrementButton.addEventListener('click', function () {
+          requestCount('POST');
+        });
+      })();
+    </script>
+  </body>
+</html>
