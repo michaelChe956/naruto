@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>五子棋</title>
+<style>
+  :root {
+    --line: #b8874a;
+    --board-bg: #eac581;
+    --ink: #2c2118;
+    --accent: #8a4b1f;
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 1.5rem 1rem 2.5rem;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    background: #f6f1e7;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  h1 { margin: 0; font-size: 1.35rem; }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+  }
+
+  .toolbar label { display: inline-flex; align-items: center; gap: 0.4rem; font-weight: 600; }
+
+  select,
+  button {
+    font: inherit;
+    color: inherit;
+    padding: 0.35rem 0.6rem;
+    border: 1px solid #b7a98f;
+    border-radius: 6px;
+    background: #fffdf8;
+  }
+
+  button { cursor: pointer; font-weight: 600; }
+  button:hover { background: #f2e6d2; }
+
+  #status { margin: 0; font-size: 1.05rem; font-weight: 600; }
+  #result { margin: 0; min-height: 1.4rem; font-size: 1.15rem; font-weight: 700; color: var(--accent); }
+
+  #board {
+    display: grid;
+    grid-template-columns: repeat(15, 1fr);
+    grid-template-rows: repeat(15, 1fr);
+    width: min(92vw, clamp(240px, calc(100vh - 290px), 540px));
+    aspect-ratio: 1 / 1;
+    padding: 10px;
+    border: 2px solid #a9743a;
+    border-radius: 8px;
+    background: var(--board-bg);
+    box-shadow: 0 6px 18px rgba(80, 50, 20, 0.25);
+    touch-action: manipulation;
+  }
+
+  /* 每个交叉点自成网格单元，横向与纵向中线延伸拼接成棋盘线，交叉点即单元中心。 */
+  .cell {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+    background-image:
+      linear-gradient(to right,
+        transparent calc(50% - 0.5px), var(--line) calc(50% - 0.5px),
+        var(--line) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+      linear-gradient(to bottom,
+        transparent calc(50% - 0.5px), var(--line) calc(50% - 0.5px),
+        var(--line) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+    cursor: pointer;
+  }
+
+  .cell:hover:not(.is-locked)::before { opacity: 0.3; }
+  .cell.is-locked { cursor: not-allowed; }
+
+  .cell::before {
+    content: "";
+    position: absolute;
+    inset: 11%;
+    border-radius: 50%;
+    opacity: 0;
+    background: #5b4a3a;
+    transition: opacity 0.08s linear;
+  }
+
+  .cell[data-state="black"]::before {
+    opacity: 1;
+    background: radial-gradient(circle at 34% 30%, #6f6f6f, #0a0a0a 72%);
+  }
+
+  .cell[data-state="white"]::before {
+    opacity: 1;
+    background: radial-gradient(circle at 34% 30%, #ffffff, #cfcfcf 78%);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.28);
+  }
+</style>
+</head>
+<body>
+<h1>五子棋</h1>
+
+<div class="toolbar">
+  <label for="mode">游戏模式
+    <select id="mode">
+      <option value="pvp">双人对战</option>
+      <option value="pve">人机对战</option>
+    </select>
+  </label>
+  <label for="player-color">玩家执色
+    <select id="player-color">
+      <option value="black">黑方（先行）</option>
+      <option value="white">白方（后行）</option>
+    </select>
+  </label>
+  <button id="restart" type="button">重新开始</button>
+</div>
+
+<p id="status" role="status" aria-live="polite">当前轮到黑方</p>
+<p id="result" role="status" aria-live="polite"></p>
+
+<div id="board" aria-label="五子棋棋盘，15 路共 225 个交叉点"></div>
+
+<script src="gomoku-rules.js"></script>
+<script src="gomoku-ai.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // 规则判定与 AI 决策均复用既有唯一实现，页面只负责渲染与回合编排。
+  var rules = window.GomokuRules;
+  var ai = window.GomokuAI;
+  if (!rules || !ai) {
+    throw new Error('gomoku.html 需要先加载 gomoku-rules.js 与 gomoku-ai.js');
+  }
+
+  var BOARD_SIZE = rules.BOARD_SIZE;
+  var EMPTY = rules.EMPTY;
+  var BLACK = rules.BLACK;
+  var WHITE = rules.WHITE;
+
+  var MODE_PVP = 'pvp';
+  var MODE_PVE = 'pve';
+  var PLAYER_LABEL = {};
+  PLAYER_LABEL[BLACK] = '黑方';
+  PLAYER_LABEL[WHITE] = '白方';
+  var COLOR_VALUE = {};
+  COLOR_VALUE[BLACK] = 'black';
+  COLOR_VALUE[WHITE] = 'white';
+
+  var boardEl = document.getElementById('board');
+  var statusEl = document.getElementById('status');
+  var resultEl = document.getElementById('result');
+  var modeEl = document.getElementById('mode');
+  var playerColorEl = document.getElementById('player-color');
+  var restartEl = document.getElementById('restart');
+
+  var cellElements = [];
+
+  var state = {
+    board: createEmptyBoard(),
+    currentPlayer: BLACK,
+    mode: MODE_PVP,
+    playerColor: BLACK,
+    gameOver: false,
+    result: null,
+    aiPending: false,
+  };
+
+  function createEmptyBoard() {
+    var board = [];
+    for (var row = 0; row < BOARD_SIZE; row += 1) {
+      var line = [];
+      for (var col = 0; col < BOARD_SIZE; col += 1) {
+        line.push(EMPTY);
+      }
+      board.push(line);
+    }
+    return board;
+  }
+
+  function buildBoard() {
+    for (var row = 0; row < BOARD_SIZE; row += 1) {
+      var rowCells = [];
+      for (var col = 0; col < BOARD_SIZE; col += 1) {
+        var cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'cell';
+        cell.id = 'cell-' + row + '-' + col;
+        cell.dataset.row = String(row);
+        cell.dataset.col = String(col);
+        cell.addEventListener('click', onCellClick(row, col));
+        boardEl.appendChild(cell);
+        rowCells.push(cell);
+      }
+      cellElements.push(rowCells);
+    }
+  }
+
+  function onCellClick(row, col) {
+    return function () {
+      handleCellClick(row, col);
+    };
+  }
+
+  function cellLabel(row, col, value) {
+    var position = '第' + (row + 1) + '行第' + (col + 1) + '列';
+    if (value === EMPTY) {
+      return position + ' 空交叉点';
+    }
+    return position + ' ' + PLAYER_LABEL[value] + '棋子';
+  }
+
+  function render() {
+    for (var row = 0; row < BOARD_SIZE; row += 1) {
+      for (var col = 0; col < BOARD_SIZE; col += 1) {
+        var cell = cellElements[row][col];
+        var value = state.board[row][col];
+        cell.dataset.state = value === BLACK ? 'black' : (value === WHITE ? 'white' : 'empty');
+        cell.classList.toggle('is-locked', state.gameOver);
+        cell.setAttribute('aria-disabled', state.gameOver ? 'true' : 'false');
+        cell.setAttribute('aria-label', cellLabel(row, col, value));
+      }
+    }
+  }
+
+  function resultText(result) {
+    if (!result) {
+      return '';
+    }
+    return result.status === 'draw' ? '平局' : PLAYER_LABEL[result.winner] + '获胜';
+  }
+
+  function turnSuffix() {
+    if (state.mode !== MODE_PVE) {
+      return '';
+    }
+    return state.currentPlayer === state.playerColor ? '（玩家）' : '（AI）';
+  }
+
+  function updateStatus() {
+    var outcome = resultText(state.result);
+    if (outcome) {
+      resultEl.textContent = outcome;
+      statusEl.textContent = '对局结束：' + outcome;
+      return;
+    }
+    resultEl.textContent = '';
+    statusEl.textContent = '当前轮到' + PLAYER_LABEL[state.currentPlayer] + turnSuffix();
+  }
+
+  // 落子一次：写入棋盘、交给 gomoku-rules.js 判定结果与轮次，再同步视图。
+  function placeMove(row, col, player) {
+    state.board[row][col] = player;
+    var verdict = rules.judgeBoard(state.board);
+    if (verdict.status === 'ongoing') {
+      state.currentPlayer = player === BLACK ? WHITE : BLACK;
+    } else {
+      state.gameOver = true;
+      state.result = { status: verdict.status, winner: verdict.winner };
+    }
+    render();
+    updateStatus();
+  }
+
+  function isAiTurn() {
+    return state.mode === MODE_PVE
+      && !state.gameOver
+      && state.currentPlayer !== state.playerColor;
+  }
+
+  function scheduleAiMove() {
+    if (!isAiTurn() || state.aiPending) {
+      return;
+    }
+    state.aiPending = true;
+    window.setTimeout(runAiMove, 0);
+  }
+
+  function runAiMove() {
+    state.aiPending = false;
+    if (!isAiTurn()) {
+      return;
+    }
+    var move = ai.chooseMove(state.board, state.currentPlayer);
+    if (!move) {
+      return;
+    }
+    placeMove(move.row, move.col, state.currentPlayer);
+  }
+
+  // 玩家点击入口：锁盘、已占用与非玩家回合一律忽略。
+  function handleCellClick(row, col) {
+    if (state.gameOver) {
+      return;
+    }
+    if (state.board[row][col] !== EMPTY) {
+      return;
+    }
+    if (state.mode === MODE_PVE && state.currentPlayer !== state.playerColor) {
+      return;
+    }
+    placeMove(row, col, state.currentPlayer);
+    scheduleAiMove();
+  }
+
+  // 新一局：清空棋盘、黑方先行；人机模式下 AI 执黑时立即自动落子。
+  function startNewGame() {
+    state.board = createEmptyBoard();
+    state.currentPlayer = BLACK;
+    state.gameOver = false;
+    state.result = null;
+    state.aiPending = false;
+    render();
+    updateStatus();
+    scheduleAiMove();
+  }
+
+  modeEl.addEventListener('change', function () {
+    state.mode = modeEl.value === MODE_PVE ? MODE_PVE : MODE_PVP;
+    startNewGame();
+  });
+
+  playerColorEl.addEventListener('change', function () {
+    state.playerColor = playerColorEl.value === 'white' ? WHITE : BLACK;
+    startNewGame();
+  });
+
+  restartEl.addEventListener('click', function () {
+    startNewGame();
+  });
+
+  buildBoard();
+  state.mode = modeEl.value === MODE_PVE ? MODE_PVE : MODE_PVP;
+  state.playerColor = playerColorEl.value === 'white' ? WHITE : BLACK;
+  render();
+  updateStatus();
+  scheduleAiMove();
+
+  window.GomokuGame = {
+    BOARD_SIZE: BOARD_SIZE,
+    EMPTY: EMPTY,
+    BLACK: BLACK,
+    WHITE: WHITE,
+    MODE_PVP: MODE_PVP,
+    MODE_PVE: MODE_PVE,
+    getState: function () {
+      return {
+        board: state.board.map(function (line) { return line.slice(); }),
+        currentPlayer: state.currentPlayer,
+        mode: state.mode,
+        playerColor: state.playerColor,
+        gameOver: state.gameOver,
+        result: state.result ? { status: state.result.status, winner: state.result.winner } : null,
+      };
+    },
+    startNewGame: startNewGame,
+    handleCellClick: handleCellClick,
+  };
+})();
+</script>
+</body>
+</html>
