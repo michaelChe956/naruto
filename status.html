@@ -27,6 +27,8 @@
   <dd id="status">加载中…</dd>
   <dt>uptimeSeconds</dt>
   <dd id="uptimeSeconds">加载中…</dd>
+  <dt>最近部署</dt>
+  <dd id="lastDeployedAt">加载中…</dd>
 </dl>
 <p id="error" hidden></p>
 <script>
@@ -41,13 +43,25 @@
     return document.getElementById(id);
   }
 
+  // 「最近部署」文本写入契约：last_deployed_at 为非空字符串时逐字写入，
+  // 不做任何格式化改写；其余情况（null、键缺失、空字符串、非字符串）一律写入占位符 —。
+  function deployedText(data) {
+    var value = data.last_deployed_at;
+    if (typeof value === 'string' && value.length > 0) {
+      return value;
+    }
+    return PLACEHOLDER;
+  }
+
   function showError() {
     var statusEl = byId('status');
     var uptimeEl = byId('uptimeSeconds');
+    var deployedEl = byId('lastDeployedAt');
     var errorEl = byId('error');
 
     if (statusEl) { statusEl.textContent = PLACEHOLDER; }
     if (uptimeEl) { uptimeEl.textContent = PLACEHOLDER; }
+    if (deployedEl) { deployedEl.textContent = PLACEHOLDER; }
     if (errorEl) {
       errorEl.textContent = ERROR_TEXT;
       errorEl.hidden = false;
@@ -57,10 +71,12 @@
   function render(data) {
     var statusEl = byId('status');
     var uptimeEl = byId('uptimeSeconds');
+    var deployedEl = byId('lastDeployedAt');
     var errorEl = byId('error');
 
     if (statusEl) { statusEl.textContent = data.status; }
     if (uptimeEl) { uptimeEl.textContent = data.uptimeSeconds; }
+    if (deployedEl) { deployedEl.textContent = deployedText(data); }
     if (errorEl) {
       errorEl.textContent = '';
       errorEl.hidden = true;

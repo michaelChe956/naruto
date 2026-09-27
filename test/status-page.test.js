@@ -2,7 +2,10 @@
 
 // 验收测试：status.html 单文件状态页
 // 覆盖 AC-001（单文件/无外部资源）、AC-002（解析时请求 /api/status 并渲染原值）、
-// AC-003（取数失败或数据不合法时的错误分支）。
+// AC-003（取数失败或数据不合法时的错误分支）、
+// AC-006（既有状态项列表区域存在「最近部署」展示项且取数目标仍为 /api/status）、
+// AC-007（last_deployed_at 为合法 RFC3339 时逐字写入展示项、不做格式化改写）、
+// AC-008（last_deployed_at 为 null 或键缺失时写入占位符 — 且既有错误提示保持不可见）。
 // 依赖仅使用 Node 内置模块，避免引入 jsdom 等外部依赖。
 
 const { test } = require('node:test');
@@ -14,6 +17,10 @@ const vm = require('node:vm');
 const PAGE_PATH = path.join(__dirname, '..', 'status.html');
 const API_PATH = '/api/status';
 const PLACEHOLDER = '\u2014'; // — U+2014 EM DASH
+
+// 「最近部署」展示项的交付契约（CT-002）：稳定节点标识与文本写入规则。
+const DEPLOYED_LABEL = '最近部署';
+const DEPLOYED_NODE_ID = 'lastDeployedAt';
 
 function readPage() {
   assert.ok(fs.existsSync(PAGE_PATH), 'status.html 必须存在');
@@ -38,6 +45,7 @@ function runPage({ response, rejection }) {
   const elements = {
     status: createElement('status'),
     uptimeSeconds: createElement('uptimeSeconds'),
+    lastDeployedAt: createElement(DEPLOYED_NODE_ID),
     error: createElement('error'),
   };
   const fetchCalls = [];
@@ -142,6 +150,90 @@ test('AC-003 响应不合法（HTTP 非 2xx）：走错误分支', async () => {
   assert.equal(String(elements.uptimeSeconds.textContent), PLACEHOLDER);
   assert.equal(elements.error.hidden, false);
   assert.ok(elements.error.textContent.trim().length > 0);
+});
+
+// —— 「最近部署」（last_deployed_at）展示项：AC-006 / AC-007 / AC-008 ——
+
+test('AC-006 「最近部署」展示项位于既有状态项列表区域内且带稳定节点标识，取数目标仍为 /api/status', () => {
+  const source = readPage();
+
+  const listMatch = /<dl\b[^>]*>([\s\S]*?)<\/dl>/i.exec(source);
+  assert.ok(listMatch, 'status.html 必须保留既有状态项列表区域 <dl>');
+  const list = listMatch[1];
+  assert.ok(list.includes(DEPLOYED_LABEL), `<dl> 内必须存在「${DEPLOYED_LABEL}」展示项`);
+  assert.ok(
+    new RegExp(`id\\s*=\\s*["']${DEPLOYED_NODE_ID}["']`).test(list),
+    `「${DEPLOYED_LABEL}」展示项必须位于 <dl> 内且带 #${DEPLOYED_NODE_ID} 节点标识`,
+  );
+
+  // 取数目标不变：解析时仍只发起 1 次 /api/status 请求，且展示项节点可被写入。
+  const { elements } = runPage({
+    response: okResponse({ status: 'ok', uptimeSeconds: 1, last_deployed_at: null }),
+  });
+  assert.ok(elements[DEPLOYED_NODE_ID], `status.html 必须提供 #${DEPLOYED_NODE_ID} 节点供文本写入`);
+});
+
+test('AC-007 last_deployed_at 为合法 RFC3339 时逐字写入展示项且不做格式化改写，#error 保持不可见', async () => {
+  const samples = [
+    '2026-09-27T16:00:00Z',
+    '2026-09-27T16:00:00.123456Z',
+    '2026-09-27T23:59:59+08:00',
+    '2024-02-29T00:00:00-05:30',
+  ];
+
+  for (const sample of samples) {
+    const { elements, settle } = runPage({
+      response: okResponse({ status: 'ok', uptimeSeconds: 12, last_deployed_at: sample }),
+    });
+    await settle();
+
+    assert.equal(
+      String(elements[DEPLOYED_NODE_ID].textContent),
+      sample,
+      `last_deployed_at=${sample} 时必须逐字写入展示项，不做格式化改写`,
+    );
+    assert.equal(elements.error.hidden, true, `last_deployed_at=${sample} 时 #error 必须保持不可见`);
+    assert.equal(elements.error.textContent, '', `last_deployed_at=${sample} 时 #error 不得残留错误文本`);
+  }
+});
+
+test('AC-008 last_deployed_at 为 null、键缺失或空字符串时写入占位符 — 且既有错误提示保持不可见', async () => {
+  const payloads = [
+    { status: 'ok', uptimeSeconds: 12, last_deployed_at: null },
+    { status: 'ok', uptimeSeconds: 12 },
+    { status: 'ok', uptimeSeconds: 12, last_deployed_at: '' },
+  ];
+
+  for (const payload of payloads) {
+    const { elements, settle } = runPage({ response: okResponse(payload) });
+    await settle();
+
+    const label = JSON.stringify(payload);
+    assert.equal(
+      String(elements[DEPLOYED_NODE_ID].textContent),
+      PLACEHOLDER,
+      `payload ${label}: 「${DEPLOYED_LABEL}」展示项必须写出占位符 —`,
+    );
+    assert.equal(elements.error.hidden, true, `payload ${label}: 既有错误提示必须保持不可见`);
+    assert.equal(elements.error.textContent, '', `payload ${label}: #error 不得残留错误文本`);
+    assert.equal(String(elements.status.textContent), 'ok', `payload ${label}: #status 仍须写入原值`);
+    assert.equal(
+      String(elements.uptimeSeconds.textContent),
+      '12',
+      `payload ${label}: #uptimeSeconds 仍须写入原值`,
+    );
+  }
+});
+
+test('AC-003 取数失败时「最近部署」展示项同样落到 — 占位符', async () => {
+  const { elements, settle } = runPage({ rejection: new Error('network down') });
+  await settle();
+
+  assert.equal(
+    String(elements[DEPLOYED_NODE_ID].textContent),
+    PLACEHOLDER,
+    '取数失败时展示项必须为 — 占位符，不得残留加载中…',
+  );
 });
 
 test('AC-003 响应数据不合法：缺字段/类型错误时走错误分支', async () => {
