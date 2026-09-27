@@ -6,6 +6,9 @@
 //   TASK-010 / AC-010 —— createServer().listen(0) 取得随机端口，每个用例结束后 close 服务；
 //                        GET /api/status 返回 200、status=ok、uptimeSeconds 为非负整数；
 //                        GET /status.html 返回 200 且 Content-Type 为 text/html。
+//   CT-001            —— GET /api/status 成功响应顶层字段集合恰为 last_deployed_at、
+//                        status、uptimeSeconds 三个字段；last_deployed_at 为 null 或可被
+//                        RFC3339 解析（DEPLOYED_AT 缺省时为 null，合法 RFC3339 时逐字符透传）。
 //   TASK-011 / AC-011 —— GET /status.html 响应体与仓库根目录 status.html 逐字节一致；
 //                        GET /unknown 与 POST /api/status 返回 404。
 //   CT-002            —— 未匹配请求返回 404 且 Content-Type 为 text/plain; charset=utf-8。
@@ -25,6 +28,22 @@ const STATUS_PATH = '/api/status';
 const PAGE_ENDPOINT = '/status.html';
 const UNKNOWN_PATH = '/unknown';
 const PLAIN_TEXT = 'text/plain; charset=utf-8';
+// CT-001：成功响应顶层字段集合必须恰为这三个字段（排序后比较，避免依赖序列化顺序）。
+const STATUS_FIELDS = ['last_deployed_at', 'status', 'uptimeSeconds'];
+// 用于覆盖 last_deployed_at 的 RFC3339 透传分支。
+const DEPLOYED_AT_SAMPLE = '2026-04-14T09:30:00Z';
+
+// RFC3339 date-time 的独立判定，不复用 server.js 内部实现，避免同源错误掩盖契约破坏。
+const RFC3339_PATTERN =
+  /^(\d{4})-(\d{2})-(\d{2})[Tt](\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:[Zz]|[+-]\d{2}:\d{2})$/;
+
+function isRfc3339Parseable(value) {
+  return (
+    typeof value === 'string' &&
+    RFC3339_PATTERN.test(value) &&
+    !Number.isNaN(Date.parse(value))
+  );
+}
 
 // 对随机端口发起一次请求，完整读取响应体。
 function request(port, method, pathname) {
@@ -60,6 +79,27 @@ async function withServer(run) {
     await run(port, server);
   } finally {
     await new Promise((resolve) => server.close(resolve));
+  }
+}
+
+// 在受控的 DEPLOYED_AT 下运行断言并在结束后恢复原值。
+// server.js 每个请求读取一次 process.env.DEPLOYED_AT，因此本进程内改环境变量即可覆盖两条分支。
+async function withDeployedAt(value, run) {
+  const previous = process.env.DEPLOYED_AT;
+  if (value === undefined) {
+    delete process.env.DEPLOYED_AT;
+  } else {
+    process.env.DEPLOYED_AT = value;
+  }
+
+  try {
+    await run();
+  } finally {
+    if (previous === undefined) {
+      delete process.env.DEPLOYED_AT;
+    } else {
+      process.env.DEPLOYED_AT = previous;
+    }
   }
 }
 
@@ -100,6 +140,59 @@ test('AC-010 GET /api/status 返回 200 且 status=ok、uptimeSeconds 为非负�
       `uptimeSeconds 必须为整数，实际 ${JSON.stringify(payload.uptimeSeconds)}`,
     );
     assert.ok(payload.uptimeSeconds >= 0, 'uptimeSeconds 必须为非负整数');
+  });
+});
+
+test('AC-010 顶层字段集合恰为 last_deployed_at、status、uptimeSeconds，且 last_deployed_at 为 null 或可被 RFC3339 解析', async () => {
+  await withDeployedAt(undefined, async () => {
+    await withServer(async (port) => {
+      const res = await request(port, 'GET', STATUS_PATH);
+      assert.equal(res.statusCode, 200, 'GET /api/status 必须返回 200');
+
+      const payload = JSON.parse(res.body.toString('utf8'));
+      assert.deepEqual(
+        Object.keys(payload).sort(),
+        STATUS_FIELDS,
+        `成功响应顶层字段必须恰为 ${STATUS_FIELDS.join('、')}`,
+      );
+      assert.equal(payload.status, 'ok', 'status 必须为非空字符串 ok');
+      assert.ok(
+        Number.isInteger(payload.uptimeSeconds) && payload.uptimeSeconds >= 0,
+        'uptimeSeconds 必须为非负整数',
+      );
+
+      const deployedAt = payload.last_deployed_at;
+      assert.ok(
+        deployedAt === null || isRfc3339Parseable(deployedAt),
+        `last_deployed_at 必须为 null 或可被 RFC3339 解析，实际 ${JSON.stringify(deployedAt)}`,
+      );
+      assert.equal(deployedAt, null, 'DEPLOYED_AT 缺省时 last_deployed_at 必须为 null');
+    });
+  });
+});
+
+test('CT-001 DEPLOYED_AT 为合法 RFC3339 时 last_deployed_at 逐字符透传且字段集合不变', async () => {
+  await withDeployedAt(DEPLOYED_AT_SAMPLE, async () => {
+    await withServer(async (port) => {
+      const res = await request(port, 'GET', STATUS_PATH);
+      assert.equal(res.statusCode, 200, 'GET /api/status 必须返回 200');
+
+      const payload = JSON.parse(res.body.toString('utf8'));
+      assert.deepEqual(
+        Object.keys(payload).sort(),
+        STATUS_FIELDS,
+        '合法 RFC3339 下顶层字段集合必须保持恰为三个字段',
+      );
+      assert.equal(
+        payload.last_deployed_at,
+        DEPLOYED_AT_SAMPLE,
+        '合法 RFC3339 必须逐字符透传原始字符串',
+      );
+      assert.ok(
+        isRfc3339Parseable(payload.last_deployed_at),
+        'last_deployed_at 必须可被 RFC3339 解析',
+      );
+    });
   });
 });
 
