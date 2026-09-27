@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>服务状态</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0;
+    padding: 2rem;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+  }
+  h1 { margin: 0 0 1rem; font-size: 1.25rem; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1rem; margin: 0; }
+  dt { font-weight: 600; }
+  dd { margin: 0; }
+  #error { margin: 1rem 0 0; font-weight: 600; color: #b00020; }
+  #error[hidden] { display: none; }
+</style>
+</head>
+<body>
+<h1>服务状态</h1>
+<dl>
+  <dt>status</dt>
+  <dd id="status">加载中…</dd>
+  <dt>uptimeSeconds</dt>
+  <dd id="uptimeSeconds">加载中…</dd>
+</dl>
+<p id="error" hidden></p>
+<script>
+(function () {
+  'use strict';
+
+  var API_PATH = '/api/status';
+  var PLACEHOLDER = '\u2014';
+  var ERROR_TEXT = '状态获取失败：无法读取 /api/status 响应。';
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function showError() {
+    var statusEl = byId('status');
+    var uptimeEl = byId('uptimeSeconds');
+    var errorEl = byId('error');
+
+    if (statusEl) { statusEl.textContent = PLACEHOLDER; }
+    if (uptimeEl) { uptimeEl.textContent = PLACEHOLDER; }
+    if (errorEl) {
+      errorEl.textContent = ERROR_TEXT;
+      errorEl.hidden = false;
+    }
+  }
+
+  function render(data) {
+    var statusEl = byId('status');
+    var uptimeEl = byId('uptimeSeconds');
+    var errorEl = byId('error');
+
+    if (statusEl) { statusEl.textContent = data.status; }
+    if (uptimeEl) { uptimeEl.textContent = data.uptimeSeconds; }
+    if (errorEl) {
+      errorEl.textContent = '';
+      errorEl.hidden = true;
+    }
+  }
+
+  function isValid(data) {
+    if (!data || typeof data !== 'object') { return false; }
+    if (typeof data.status !== 'string' || data.status.length === 0) { return false; }
+    if (typeof data.uptimeSeconds !== 'number' || !isFinite(data.uptimeSeconds)) { return false; }
+    return true;
+  }
+
+  try {
+    // 脚本解析时立即取数，不使用外部依赖或构建产物。
+    fetch(API_PATH)
+      .then(function (response) {
+        if (!response || response.ok !== true) {
+          throw new Error('unexpected response status');
+        }
+        return response.json();
+      })
+      .then(function (data) {
+        if (!isValid(data)) {
+          throw new Error('invalid payload');
+        }
+        render(data);
+      })
+      .catch(function () {
+        showError();
+      });
+  } catch (err) {
+    showError();
+  }
+})();
+</script>
+</body>
+</html>
