@@ -12,6 +12,8 @@
 //   TASK-011 / AC-011 —— GET /status.html 响应体与仓库根目录 status.html 逐字节一致；
 //                        GET /unknown 与 POST /api/status 返回 404。
 //   CT-002            —— 未匹配请求返回 404 且 Content-Type 为 text/plain; charset=utf-8。
+//   CT-003            —— GET /status.html 投放的页面源在既有状态项列表区域内含「最近部署」
+//                        展示项节点（<dt>最近部署</dt> 与其 dd#lastDeployedAt）。
 //
 // 依赖仅使用 Node 内置模块（node:test、node:assert、node:fs、node:http、node:path）。
 
@@ -32,6 +34,9 @@ const PLAIN_TEXT = 'text/plain; charset=utf-8';
 const STATUS_FIELDS = ['last_deployed_at', 'status', 'uptimeSeconds'];
 // 用于覆盖 last_deployed_at 的 RFC3339 透传分支。
 const DEPLOYED_AT_SAMPLE = '2026-04-14T09:30:00Z';
+// CT-003：「最近部署」展示项的标签文本与稳定节点标识。
+const DEPLOYED_LABEL = '最近部署';
+const DEPLOYED_NODE_ID = 'lastDeployedAt';
 
 // RFC3339 date-time 的独立判定，不复用 server.js 内部实现，避免同源错误掩盖契约破坏。
 const RFC3339_PATTERN =
@@ -216,6 +221,27 @@ test('AC-011 GET /status.html 响应体与仓库根目录 status.html 逐字节�
 
     assert.ok(expected.length > 0, '仓库根目录 status.html 不得为空');
     assert.ok(res.body.equals(expected), 'GET /status.html 响应体必须与仓库根目录 status.html 逐字节一致');
+  });
+});
+
+test('CT-003 GET /status.html 投放的页面源在状态项列表区域内含「最近部署」展示项节点', async () => {
+  await withServer(async (port) => {
+    const res = await request(port, 'GET', PAGE_ENDPOINT);
+    assert.equal(res.statusCode, 200, 'GET /status.html 必须返回 200');
+
+    const html = res.body.toString('utf8');
+    assert.match(html, /<dt>最近部署<\/dt>/, '页面源必须含「最近部署」展示项标签');
+    assert.match(
+      html,
+      /<dd[^>]*id="lastDeployedAt"[^>]*>/,
+      '页面源必须含 id="lastDeployedAt" 的展示值节点',
+    );
+    // 相邻关系证明该标签与节点同属一个展示项，而不是分散在页面不同区域。
+    assert.match(
+      html,
+      /<dt>最近部署<\/dt>\s*<dd[^>]*id="lastDeployedAt"[^>]*>/,
+      '「最近部署」dt 必须与其 dd#lastDeployedAt 构成同一展示项',
+    );
   });
 });
 
