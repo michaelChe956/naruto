@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>服务状态</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0;
+    padding: 2rem;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+  }
+  h1 { margin: 0 0 1rem; font-size: 1.25rem; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1rem; margin: 0; }
+  dt { font-weight: 600; }
+  dd { margin: 0; }
+  #versionInfo { margin: 1.5rem 0 0; }
+  #versionInfo h2 { margin: 0 0 0.5rem; font-size: 1rem; }
+  .channel-badge-row { display: flex; align-items: center; gap: 0.5rem; margin: 0.75rem 0 0; }
+  .channel-badge-label { font-weight: 600; }
+  .channel-badge {
+    display: inline-block;
+    min-width: 1.5rem;
+    padding: 0.1rem 0.6rem;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-weight: 600;
+    text-align: center;
+  }
+  #error { margin: 1rem 0 0; font-weight: 600; color: #b00020; }
+  #error[hidden] { display: none; }
+</style>
+</head>
+<body>
+<h1>服务状态</h1>
+<dl class="status-list">
+  <dt>status</dt>
+  <dd id="status">加载中…</dd>
+  <dt>uptimeSeconds</dt>
+  <dd id="uptimeSeconds">加载中…</dd>
+</dl>
+
+<!-- 版本信息区域：版本信息列表 + 紧邻其旁的渠道徽标容器 -->
+<section id="versionInfo" aria-labelledby="versionInfoTitle">
+  <h2 id="versionInfoTitle">版本信息</h2>
+  <dl id="versionInfoList">
+    <dt>version</dt>
+    <dd id="version">加载中…</dd>
+  </dl>
+  <!-- 渠道徽标容器：位于版本信息区域旁（紧随版本信息列表），始终渲染、始终可见。
+       文本写入口径：以 GET /api/status 响应的 deploy_channel 原值逐字写入，
+       不做显示名映射、不做格式化或截断；前端不内置缺省渠道值，
+       字段缺失、非字符串或为空时写入占位符 —。 -->
+  <p class="channel-badge-row">
+    <span class="channel-badge-label">部署渠道</span>
+    <span class="channel-badge" id="channelBadge">—</span>
+  </p>
+</section>
+
+<p id="error" hidden></p>
+<script>
+(function () {
+  'use strict';
+
+  var API_PATH = '/api/status';
+  var PLACEHOLDER = '\u2014';
+  var ERROR_TEXT = '状态获取失败：无法读取 /api/status 响应。';
+
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function setText(id, text) {
+    var el = byId(id);
+    if (el) { el.textContent = text; }
+  }
+
+  // 渠道徽标文本口径（CT-002）：以 GET /api/status 响应的 deploy_channel 为唯一取值来源，
+  // 原值逐字返回，不做显示名映射、不做格式化或截断；前端不内置缺省渠道值；
+  // 字段缺失、非字符串或为空时返回占位符 —。
+  function channelBadgeText(data) {
+    var value = data.deploy_channel;
+    if (typeof value === 'string' && value.length > 0) {
+      return value;
+    }
+    return PLACEHOLDER;
+  }
+
+  // 版本信息列表项文本口径：version 为非空字符串时逐字写入，其余情况写占位符 —。
+  function versionText(data) {
+    var value = data.version;
+    if (typeof value === 'string' && value.length > 0) {
+      return value;
+    }
+    return PLACEHOLDER;
+  }
+
+  function showError() {
+    setText('status', PLACEHOLDER);
+    setText('uptimeSeconds', PLACEHOLDER);
+    setText('version', PLACEHOLDER);
+    setText('channelBadge', PLACEHOLDER);
+    var errorEl = byId('error');
+    if (errorEl) {
+      errorEl.textContent = ERROR_TEXT;
+      errorEl.hidden = false;
+    }
+  }
+
+  function render(data) {
+    setText('status', data.status);
+    setText('uptimeSeconds', data.uptimeSeconds);
+    setText('version', versionText(data));
+    // 无论渠道取值为何，徽标容器都渲染且不隐藏。
+    setText('channelBadge', channelBadgeText(data));
+    var errorEl = byId('error');
+    if (errorEl) {
+      errorEl.textContent = '';
+      errorEl.hidden = true;
+    }
+  }
+
+  function isValid(data) {
+    if (!data || typeof data !== 'object') { return false; }
+    if (typeof data.status !== 'string' || data.status.length === 0) { return false; }
+    if (typeof data.uptimeSeconds !== 'number' || !isFinite(data.uptimeSeconds)) { return false; }
+    return true;
+  }
+
+  try {
+    // 脚本解析时立即取数，不使用外部依赖或构建产物。
+    fetch(API_PATH)
+      .then(function (response) {
+        if (!response || response.ok !== true) {
+          throw new Error('unexpected response status');
+        }
+        return response.json();
+      })
+      .then(function (data) {
+        if (!isValid(data)) {
+          throw new Error('invalid payload');
+        }
+        render(data);
+      })
+      .catch(function () {
+        showError();
+      });
+  } catch (err) {
+    showError();
+  }
+})();
+</script>
+</body>
+</html>
