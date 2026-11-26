@@ -7,3 +7,6 @@
 .playwright/
 .playwright-cli/
 .aria/
+
+# CodeGraph 本地索引
+.codegraph/
